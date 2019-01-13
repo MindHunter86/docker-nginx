@@ -105,13 +105,14 @@ RUN addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 
 # install build dependencies
-RUN apk add --no-cache rsync tzdata
+RUN apk add --no-cache pcre openssl-dev rsync tzdata
 
 # copy files from build container && sync to root && source remove
 RUN mkdir -p /usr/loca/nginx
 COPY --from=builder /usr/local/nginx /usr/local/nginx
 RUN rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
-	&& rm -rf /usr/local/nginx
+	&& rm -rf /usr/local/nginx \
+	&& apk del rsync
 
 # update chmod for nginx ssl dir
 RUN chown root:root /etc/nginx/ssl \
