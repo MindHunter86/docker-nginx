@@ -114,13 +114,13 @@ RUN rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
 # install run dependencies
 RUN apk add --no-cache --virtual .gettext gettext \
 	&& mv /usr/bin/envsubst /tmp \
-	&& apk add --no-cache "$( \
+	&& apk add --no-cache --virtual .nginx-rundeps $( \
 		scanelf --needed --nobanner --format '%n#p' /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst	\
 			| tr ',' '\n' \
 			| sort -u \
 			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 			| xargs \
-		)" \
+		) \
 	&& apk del .gettext \
 	&& mv /tmp/envsubst /usr/local/bin/
 
