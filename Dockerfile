@@ -119,6 +119,7 @@ RUN apk add --no-cache --virtual .gettext gettext \
 			| tr ',' '\n' \
 			| sort -u \
 			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+			| xargs \
 		)" \
 	&& apk del .gettext \
 	&& mv /tmp/envsubst /usr/local/bin/
