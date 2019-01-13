@@ -1,8 +1,7 @@
 # custom nginx by vkom
 FROM alpine:3.8 as builder
 
-LABEL maintainer="NGINX Docker Maintainers <docker-maint@nginx.com>"
-LABEL maintainer="vkom <vadimka_kom@mail.ru>"
+LABEL maintainer="vkom <admin@mh00p.net"
 
 ENV NGINX_VERSION 1.12.2
 ENV NGXMOD_GRAPHITE_VERSION 2.0
@@ -30,7 +29,6 @@ RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NG
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_7_7.patch
 RUN ./configure \
-		--with-debug \
 		--user=nginx \
 		--group=nginx \
 		--prefix=/etc/nginx \
@@ -104,22 +102,35 @@ FROM alpine:3.8
 RUN addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
 
-# install build dependencies
-RUN apk add --no-cache pcre openssl-dev rsync tzdata
 
 # copy files from build container && sync to root && source remove
-RUN mkdir -p /usr/loca/nginx
+RUN apk add --no-cache rsync \
+	&& mkdir -p /usr/loca/nginx
 COPY --from=builder /usr/local/nginx /usr/local/nginx
 RUN rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
 	&& rm -rf /usr/local/nginx \
 	&& apk del rsync
+
+# install run dependencies
+RUN apk add --no-cache --virtual .gettext gettext \
+	&& mv /usr/bin/envsubst /tmp \
+	&& apk add --no-cache "$( \
+		scanelf --needed --nobanner --format '%n#p' /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst	\
+			| tr ',' '\n' \
+			| sort -u \
+			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
+		)" \
+	&& apk del .gettext \
+	&& mv /tmp/envsubst /usr/local/bin/
+
+# install tzdata so users could set the timezones through the environment variables
+RUN apk add --no-cache tzdata
 
 # update chmod for nginx ssl dir
 RUN chown root:root /etc/nginx/ssl \
 	&& chmod 0100 /etc/nginx/ssl
 
 # forward request and error logs to docker log collector
-WORKDIR /
 RUN ln -sf /dev/stdout /var/log/nginx/access.log \
 	&& ln -sf /dev/stderr /var/log/nginx/error.log
 
@@ -129,25 +140,6 @@ STOPSIGNAL SIGTERM
 
 CMD ["nginx", "-g", "daemon off;"]
 
-#	&& mv objs/nginx objs/nginx-debug \
-#	&& mv objs/ngx_http_xslt_filter_module.so objs/ngx_http_xslt_filter_module-debug.so \
-#	&& mv objs/ngx_http_image_filter_module.so objs/ngx_http_image_filter_module-debug.so \
-#	&& mv objs/ngx_http_geoip_module.so objs/ngx_http_geoip_module-debug.so \
-#	&& mv objs/ngx_stream_geoip_module.so objs/ngx_stream_geoip_module-debug.so \
-#	&& ./configure $CONFIG \
-#	&& make -j$(getconf _NPROCESSORS_ONLN) \
-#	&& make install \
-#	&& rm -rf /etc/nginx/html/ \
-#	&& mkdir /etc/nginx/conf.d/ \
-#	&& mkdir -p /usr/share/nginx/html/ \
-#	&& install -m644 html/index.html /usr/share/nginx/html/ \
-#	&& install -m644 html/50x.html /usr/share/nginx/html/ \
-#	&& install -m755 objs/nginx-debug /usr/sbin/nginx-debug \
-#	&& install -m755 objs/ngx_http_xslt_filter_module-debug.so /usr/lib/nginx/modules/ngx_http_xslt_filter_module-debug.so \
-#	&& install -m755 objs/ngx_http_image_filter_module-debug.so /usr/lib/nginx/modules/ngx_http_image_filter_module-debug.so \
-#	&& install -m755 objs/ngx_http_geoip_module-debug.so /usr/lib/nginx/modules/ngx_http_geoip_module-debug.so \
-#	&& install -m755 objs/ngx_stream_geoip_module-debug.so /usr/lib/nginx/modules/ngx_stream_geoip_module-debug.so \
-#
 #	\
 #	# Bring in gettext so we can get `envsubst`, then throw
 #	# the rest away. To do this, we need to install `gettext`
@@ -166,8 +158,3 @@ CMD ["nginx", "-g", "daemon off;"]
 #	&& apk del .build-deps \
 #	&& apk del .gettext \
 #	&& mv /tmp/envsubst /usr/local/bin/ \
-#	\
-#
-#COPY nginx.conf /etc/nginx/nginx.conf
-#COPY nginx.vh.default.conf /etc/nginx/conf.d/default.conf
-#
