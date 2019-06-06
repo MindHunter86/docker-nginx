@@ -137,6 +137,9 @@ RUN apk add --no-cache tzdata
 RUN chown root:root /etc/nginx/ssl \
 	&& chmod 0100 /etc/nginx/ssl
 
+# remove nginx.conf for future mounting:
+RUN rm -vf /etc/nginx/nginx.conf
+
 # forward request and error logs to docker log collector
 RUN ln -sf /dev/stdout /var/log/nginx/access.log \
 	&& ln -sf /dev/stderr /var/log/nginx/error.log
