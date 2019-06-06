@@ -12,5 +12,16 @@ pipeline {
         echo 'all ok'
       }
     }
+    stage('Build') {
+      agent {
+        dockerfile {
+          filename 'Dockerfile'
+        }
+
+      }
+      steps {
+        echo 'docker ok?'
+      }
+    }
   }
 }
