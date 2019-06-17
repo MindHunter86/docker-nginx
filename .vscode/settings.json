@@ -1,0 +1,7 @@
+{
+    "git.enableSmartCommit": true,
+
+    "editor.autoClosingBrackets": "never",
+    "editor.minimap.enabled": false,
+    "editor.tabSize": 2,
+}
