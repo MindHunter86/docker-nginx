@@ -4,7 +4,7 @@ FROM alpine:latest as builder
 LABEL maintainer="vkom <admin@mh00p.net>"
 
 ARG IN_NGINX_VERSION=1.16.0
-ARG IN_NGXMOD_GRAPHITE_VERSION=2.0
+ARG IN_NGXMOD_GRAPHITE_VERSION=2.6
 ARG IN_NGXMOD_TSTCK_VERSION=master
 ARG IN_NGXMOD_PAM_VERSION=1.5.1
 ARG IN_NGXMOD_RDNS_VERSION=master
@@ -33,7 +33,7 @@ RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDN
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
-RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_7_7.patch
+# RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_7_7.patch
 RUN ./configure \
 		--user=nginx \
 		--group=nginx \
