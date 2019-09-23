@@ -32,7 +32,7 @@ RUN curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/v${NG
 RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxvC .
-RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz
+RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxvC .
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
