@@ -36,7 +36,7 @@ RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archiv
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
-# RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_7_7.patch
+RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch
 RUN ./configure \
 		--user=nginx \
 		--group=nginx \
