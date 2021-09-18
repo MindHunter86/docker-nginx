@@ -1,14 +1,24 @@
 # custom nginx by vkom
+
+# FROM alpine:latest as phpbuilder
+# LABEL maintainer="vkom <admin@vkom.cc>"
+
+# ARG PHP_VERSION=7.3.10
+
+# RUN apk add --no-cache curl gcc g++ make musl-dev linux-headers gd-dev geoip-dev \
+# 		libxml2-dev libxslt-dev openssl-dev paxmark pcre-dev perl-dev pkgconf zlib-dev libedit-dev ncurses-dev php7-dev php7-embed argon2-dev
+
+
 FROM alpine:latest as builder
+LABEL maintainer="vkom <admin@vkom.cc>"
 
-LABEL maintainer="vkom <admin@mh00p.net>"
-
-ARG IN_NGINX_VERSION=1.16.0
+ARG IN_NGINX_VERSION=1.18.0
 ARG IN_NGXMOD_GRAPHITE_VERSION=3.1
 ARG IN_NGXMOD_TSTCK_VERSION=master
 ARG IN_NGXMOD_PAM_VERSION=1.5.1
 ARG IN_NGXMOD_RDNS_VERSION=master
 ARG IN_NGXMOD_HEADMR_VERSION=master
+ARG IN_NGXMOD_PHP_VERSION=0.0.25
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGXMOD_GRAPHITE_VERSION=$IN_NGXMOD_GRAPHITE_VERSION
@@ -16,10 +26,13 @@ ENV NGXMOD_TSTCK_VERSION=$IN_NGXMOD_TSTCK_VERSION
 ENV NGXMOD_PAM_VERSION=$IN_NGXMOD_PAM_VERSION
 ENV NGXMOD_RDNS_VERSION=$IN_NGXMOD_RDNS_VERSION
 ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
+ENV NGXMOD_PHP_VERSION=$IN_NGXMOD_PAM_VERSION
+ENV PHP_LIB=/usr/lib
 
-# install build dependencies
+# install build dependencies (last line is a ngx_php7 copypaste from it Dockerfile)
 RUN apk add --no-cache build-base curl gnupg1 linux-headers \
-		libc-dev openssl-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
+		libc-dev openssl-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev \
+		gcc g++ make musl-dev libxml2-dev paxmark perl-dev pkgconf libedit-dev ncurses-dev php7-dev php7-embed argon2-dev
 
 # create builddir
 RUN mkdir -p /usr/src/nginx \
@@ -33,6 +46,7 @@ RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/$
 RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxvC .
+RUN curl -f -sS -L https://github.com/rryqszq4/ngx_php7/archive/v${NGXMOD_PHP_VERSION}.tar.gz | tar zxvC .
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
@@ -81,10 +95,13 @@ RUN ./configure \
 		--with-http_image_filter_module=dynamic \
 		--with-http_geoip_module=dynamic \
 		--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
+		--add-dynamic-module=../ngx_php7-${NGXMOD_PHP_VERSION}/third_party/ngx_devel_kit \
+		--add-dynamic-module=../ngx_php7-${NGXMOD_PHP_VERSION} \
 		--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 		--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
 		--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
 		--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
+		--with-ld-opt="-Wl,-rpath,${PHP_LIB}" \
 		--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # make && make install
