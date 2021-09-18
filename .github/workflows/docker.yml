@@ -3,7 +3,7 @@ name: Nginx compiling
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "*" ]
 
 jobs:
   nginx_build:
