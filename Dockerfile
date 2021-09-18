@@ -1,19 +1,21 @@
 # custom nginx by vkom
-FROM alpine:3.8 as builder
+FROM alpine:latest as builder
 
 LABEL maintainer="vkom <admin@mh00p.net>"
 
 ARG IN_NGINX_VERSION=1.16.0
-ARG IN_NGXMOD_GRAPHITE_VERSION=2.0
+ARG IN_NGXMOD_GRAPHITE_VERSION=2.6
 ARG IN_NGXMOD_TSTCK_VERSION=master
 ARG IN_NGXMOD_PAM_VERSION=1.5.1
-ARG IN_NGXMOD_NAXSI_VERSION=0.55.3
+ARG IN_NGXMOD_RDNS_VERSION=master
+ARG IN_NGXMOD_HEADMR_VERSION=master
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGXMOD_GRAPHITE_VERSION=$IN_NGXMOD_GRAPHITE_VERSION
 ENV NGXMOD_TSTCK_VERSION=$IN_NGXMOD_TSTCK_VERSION
 ENV NGXMOD_PAM_VERSION=$IN_NGXMOD_PAM_VERSION
-ENV NGXMOD_NAXSI_VERSION=$IN_NGXMOD_NAXSI_VERSION
+ENV NGXMOD_RDNS_VERSION=$IN_NGXMOD_RDNS_VERSION
+ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
 
 # install build dependencies
 RUN apk add --no-cache build-base curl gnupg1 linux-headers \
@@ -28,12 +30,13 @@ WORKDIR /usr/src/nginx
 RUN curl -f -sS -L https://nginx.org/download/nginx-{$NGINX_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/v${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC .
-RUN curl -f -sS -L https://github.com/nbs-system/naxsi/archive/${NGXMOD_NAXSI_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
+RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxvC .
+RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxvC .
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
-RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_7_7.patch
+RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch
 RUN ./configure \
 		--user=nginx \
 		--group=nginx \
@@ -53,7 +56,6 @@ RUN ./configure \
 		--without-select_module \
 		--without-poll_module \
 		--without-http_ssi_module \
-		--without-http_auth_basic_module \
 		--without-http_split_clients_module \
 		--without-http_uwsgi_module \
 		--without-http_scgi_module \
@@ -73,13 +75,16 @@ RUN ./configure \
 		--with-http_realip_module \
 		--with-http_addition_module \
 		--with-stream=dynamic \
+		--with-stream_ssl_preread_module \
+		--with-stream_realip_module \
 		--with-http_xslt_module=dynamic \
 		--with-http_image_filter_module=dynamic \
 		--with-http_geoip_module=dynamic \
 		--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
 		--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 		--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
-		--add-module=../naxsi-${NGXMOD_NAXSI_VERSION}/naxsi_src \
+		--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
+		--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 		--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # make && make install
@@ -102,7 +107,7 @@ RUN strip usr/sbin/nginx* \
 
 
 # RELEASE PACKAGE
-FROM alpine:3.8
+FROM alpine:latest
 
 # user & group management
 RUN addgroup -S nginx \
