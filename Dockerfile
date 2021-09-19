@@ -1,7 +1,7 @@
 # custom nginx by vkom
 FROM alpine:latest as builder
 
-LABEL maintainer="vkom <admin@mh00p.net>"
+LABEL maintainer="vkom <admin@vkom.cc>"
 
 ARG IN_NGINX_VERSION=1.21.1
 ARG IN_NGXMOD_GRAPHITE_VERSION=3.1
@@ -68,6 +68,7 @@ RUN ./configure \
 		--with-http_ssl_module \
 		--with-http_v2_module \
 		--with-http_realip_module \
+		--with-http_auth_request_module \
 		--with-http_sub_module \
 		--with-http_secure_link_module\
 		--with-http_stub_status_module \
