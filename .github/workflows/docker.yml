@@ -34,7 +34,7 @@ jobs:
         push: true
         pull: false
         context: docker-nginx/
-        tags: ${{ secrets.DOCKER_REGISTRY_URI }}/nginx:1.21.4-${{ github.run_number }}
+        tags: ${{ secrets.DOCKER_REGISTRY_URI }}/nginx:1.21.6-${{ github.run_number }}
         cache-from: type=gha
         cache-to: type=gha
     - name: Telegram notify
