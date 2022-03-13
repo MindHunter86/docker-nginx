@@ -9,6 +9,7 @@ ARG IN_NGXMOD_TSTCK_VERSION=master
 ARG IN_NGXMOD_PAM_VERSION=1.5.3
 ARG IN_NGXMOD_RDNS_VERSION=master
 ARG IN_NGXMOD_HEADMR_VERSION=master
+ARG IN_NGXMOD_BROTLI_VERSION=master
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGXMOD_GRAPHITE_VERSION=$IN_NGXMOD_GRAPHITE_VERSION
@@ -16,6 +17,7 @@ ENV NGXMOD_TSTCK_VERSION=$IN_NGXMOD_TSTCK_VERSION
 ENV NGXMOD_PAM_VERSION=$IN_NGXMOD_PAM_VERSION
 ENV NGXMOD_RDNS_VERSION=$IN_NGXMOD_RDNS_VERSION
 ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
+ENV NGXMOD_BROTLI_VERSION=$IN_NGXMOD_BROTLI_VERSION
 
 # install build dependencies
 RUN apk add --no-cache build-base curl gnupg1 linux-headers \
@@ -33,6 +35,7 @@ RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/$
 RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxvC .
+RUN curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_VERSION}.tar.gz | tar zxvC .
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
@@ -81,7 +84,9 @@ RUN ./configure \
 		--with-http_xslt_module=dynamic \
 		--with-http_image_filter_module=dynamic \
 		--with-http_geoip_module=dynamic \
+		--with-compat \
 		--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
+		--add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
 		--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 		--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
 		--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
