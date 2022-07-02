@@ -4,6 +4,7 @@ FROM alpine:latest as builder
 LABEL maintainer="vkom <admin@vkom.cc>"
 
 ARG IN_NGINX_VERSION=1.21.6
+ARG IN_NGINX_PCRE2_VERSION=pcre2-10.40
 ARG IN_NGXMOD_GRAPHITE_VERSION=3.1
 ARG IN_NGXMOD_TSTCK_VERSION=master
 ARG IN_NGXMOD_PAM_VERSION=1.5.3
@@ -12,6 +13,7 @@ ARG IN_NGXMOD_HEADMR_VERSION=master
 ARG IN_NGXMOD_BROTLI_VERSION=master
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
+ENV NGINX_PCRE2_VERSION=$IN_NGINX_PCRE2_VERSION
 ENV NGXMOD_GRAPHITE_VERSION=$IN_NGXMOD_GRAPHITE_VERSION
 ENV NGXMOD_TSTCK_VERSION=$IN_NGXMOD_TSTCK_VERSION
 ENV NGXMOD_PAM_VERSION=$IN_NGXMOD_PAM_VERSION
@@ -30,6 +32,7 @@ WORKDIR /usr/src/nginx
 
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC .
+RUN curl -f -sS -L https://github.com/PCRE2Project/pcre2/archive/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/v${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
@@ -55,7 +58,7 @@ RUN ./configure \
 		--http-client-body-temp-path=/var/cache/nginx/client_temp \
 		--http-proxy-temp-path=/var/cache/nginx/proxy_temp \
 		--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
-		--with-pcre \
+		--with-pcre=../pcre2-${NGINX_PCRE2_VERSION} \
 		--with-pcre-jit \
 		--without-select_module \
 		--without-poll_module \
