@@ -32,7 +32,7 @@ WORKDIR /usr/src/nginx
 
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC .
-RUN curl -f -sS -L https://github.com/PCRE2Project/pcre2/archive/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC .
+RUN curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/v${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
@@ -58,7 +58,7 @@ RUN ./configure \
 		--http-client-body-temp-path=/var/cache/nginx/client_temp \
 		--http-proxy-temp-path=/var/cache/nginx/proxy_temp \
 		--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
-		--with-pcre=../pcre2-${NGINX_PCRE2_VERSION} \
+		--with-pcre=../${NGINX_PCRE2_VERSION} \
 		--with-pcre-jit \
 		--without-select_module \
 		--without-poll_module \
