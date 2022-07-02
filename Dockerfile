@@ -5,7 +5,7 @@ LABEL maintainer="vkom <admin@vkom.cc>"
 
 ARG IN_NGINX_VERSION=1.22.0
 ARG IN_NGINX_PCRE2_VERSION=pcre2-10.40
-ARG IN_NGXMOD_GRAPHITE_VERSION=3.1
+ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
 ARG IN_NGXMOD_TSTCK_VERSION=master
 ARG IN_NGXMOD_PAM_VERSION=1.5.3
 ARG IN_NGXMOD_RDNS_VERSION=master
@@ -33,7 +33,7 @@ WORKDIR /usr/src/nginx
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC .
-RUN curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/v${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC .
+RUN curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxvC .
@@ -97,7 +97,7 @@ RUN ./configure \
 		--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
 		--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
 		--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
-		--with-cc-opt='-O3 -g -pipe -Wall -Wno-error=discarded-qualifiers -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
+		--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # make && make install
 RUN make -j$(( `nproc` + 1 )) \
