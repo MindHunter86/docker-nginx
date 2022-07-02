@@ -20,7 +20,7 @@ ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
 ENV NGXMOD_BROTLI_VERSION=$IN_NGXMOD_BROTLI_VERSION
 
 # install build dependencies
-RUN apk add --no-cache build-base curl gnupg1 linux-headers \
+RUN apk add --no-cache build-base curl gnupg linux-headers \
 		libc-dev openssl-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
 
 # create builddir
