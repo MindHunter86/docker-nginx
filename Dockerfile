@@ -59,6 +59,7 @@ RUN ./configure \
 		--http-proxy-temp-path=/var/cache/nginx/proxy_temp \
 		--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
 		--with-pcre=../${NGINX_PCRE2_VERSION} \
+		--with-pcre-opt='--enable-unicode --enable-pcre2-16 --enable-pcre2-32' \
 		--with-pcre-jit \
 		--without-select_module \
 		--without-poll_module \
