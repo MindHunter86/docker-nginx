@@ -84,6 +84,7 @@ RUN ./configure \
 		--with-http_dav_module \
 		--with-http_realip_module \
 		--with-http_addition_module \
+		--with-http_slice_module \
 		--with-stream=dynamic \
 		--with-stream_ssl_preread_module \
 		--with-stream_realip_module \
