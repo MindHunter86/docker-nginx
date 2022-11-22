@@ -71,6 +71,7 @@ RUN ./configure \
 		--without-http_memcached_module \
 		--without-http_empty_gif_module \
 		--without-http_browser_module \
+		--without-http_userid_module \
 		--with-threads \
 		--with-file-aio \
 		--with-http_ssl_module \
