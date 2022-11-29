@@ -11,6 +11,7 @@ ARG IN_NGXMOD_PAM_VERSION=1.5.3
 ARG IN_NGXMOD_RDNS_VERSION=master
 ARG IN_NGXMOD_HEADMR_VERSION=master
 ARG IN_NGXMOD_BROTLI_VERSION=master
+ARG IN_NGXMOD_VTS_VERSION=0.2.1
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGINX_PCRE2_VERSION=$IN_NGINX_PCRE2_VERSION
@@ -20,6 +21,7 @@ ENV NGXMOD_PAM_VERSION=$IN_NGXMOD_PAM_VERSION
 ENV NGXMOD_RDNS_VERSION=$IN_NGXMOD_RDNS_VERSION
 ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
 ENV NGXMOD_BROTLI_VERSION=$IN_NGXMOD_BROTLI_VERSION
+ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 
 # install build dependencies
 RUN apk add --no-cache build-base curl gnupg linux-headers \
@@ -39,6 +41,7 @@ RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NG
 RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_VERSION}.tar.gz | tar zxvC .
+RUN curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxvC .
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
@@ -98,6 +101,7 @@ RUN ./configure \
 		--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
 		--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
 		--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
+		--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
 		--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # make && make install
