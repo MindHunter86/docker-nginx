@@ -3,7 +3,7 @@ FROM alpine:latest as builder
 
 LABEL maintainer="vkom <admin@vkom.cc>"
 
-ARG IN_NGINX_VERSION=1.22.0
+ARG IN_NGINX_VERSION=1.22.1
 ARG IN_NGINX_PCRE2_VERSION=pcre2-10.40
 ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
 ARG IN_NGXMOD_TSTCK_VERSION=master
