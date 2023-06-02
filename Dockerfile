@@ -46,6 +46,11 @@ RUN curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_
 RUN curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/weibocom/nginx-upsync-module/archive/${NGXMOD_UPSYNC_VERSION}.tar.gz | tar zxvC .
 
+# patch upsync module
+# JFYI: patch rewrites upstream defaults for the consul_health
+WORKDIR /usr/src/nginx/nginx-upsync-module-${NGXMOD_UPSYNC_VERSION}
+RUN curl -f -sSL -q http://beta.mh00.net:8080/vOwzu/ngx_http_upsync_module.path | patch -p1
+
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch
