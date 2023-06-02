@@ -1,7 +1,7 @@
 # custom nginx by vkom
 FROM alpine:latest as builder
 
-LABEL maintainer="vkom <admin@vkom.cc>"
+LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
 ARG IN_NGINX_VERSION=1.22.1
 ARG IN_NGINX_PCRE2_VERSION=pcre2-10.40
@@ -12,6 +12,7 @@ ARG IN_NGXMOD_RDNS_VERSION=master
 ARG IN_NGXMOD_HEADMR_VERSION=master
 ARG IN_NGXMOD_BROTLI_VERSION=master
 ARG IN_NGXMOD_VTS_VERSION=0.2.1
+ARG IN_NGXMOD_UPSYNC_VERSION=master
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGINX_PCRE2_VERSION=$IN_NGINX_PCRE2_VERSION
@@ -22,6 +23,7 @@ ENV NGXMOD_RDNS_VERSION=$IN_NGXMOD_RDNS_VERSION
 ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
 ENV NGXMOD_BROTLI_VERSION=$IN_NGXMOD_BROTLI_VERSION
 ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
+ENV NGXMOD_UPSYNC_VERSION=$IN_NGXMOD_UPSYNC_VERSION
 
 # install build dependencies
 RUN apk add --no-cache build-base curl gnupg linux-headers \
@@ -42,6 +44,7 @@ RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDN
 RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxvC .
+RUN curl -f -sS -L https://github.com/weibocom/nginx-upsync-module/archive/${NGXMOD_UPSYNC_VERSION}.tar.gz | tar zxvC .
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
@@ -49,59 +52,60 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 RUN ./configure --help ||:
 RUN ../${NGINX_PCRE2_VERSION}/configure --help ||:
 RUN ./configure \
-		--user=nginx \
-		--group=nginx \
-		--prefix=/etc/nginx \
-		--pid-path=/var/run/nginx.pid \
-		--lock-path=/var/run/nginx.lock \
-		--sbin-path=/usr/sbin/nginx \
-		--modules-path=/usr/lib/nginx/modules \
-		--conf-path=/etc/nginx/nginx.conf \
-		--error-log-path=/var/log/nginx/error.log \
-		--http-log-path=/var/log/nginx/access.log \
-		--http-client-body-temp-path=/var/cache/nginx/client_temp \
-		--http-proxy-temp-path=/var/cache/nginx/proxy_temp \
-		--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
-		--with-pcre=../${NGINX_PCRE2_VERSION} \
-#		--with-pcre-opt='--enable-pcre2-16' \ # https://stackoverflow.com/questions/4655250/difference-between-utf-8-and-utf-16
-		--with-pcre-jit \
-		--without-select_module \
-		--without-poll_module \
-		--without-http_ssi_module \
-		--without-http_uwsgi_module \
-		--without-http_scgi_module \
-		--without-http_memcached_module \
-		--without-http_empty_gif_module \
-		--without-http_browser_module \
-		--without-http_userid_module \
-		--with-threads \
-		--with-file-aio \
-		--with-http_ssl_module \
-		--with-http_v2_module \
-		--with-http_realip_module \
-		--with-http_auth_request_module \
-		--with-http_sub_module \
-		--with-http_secure_link_module\
-		--with-http_stub_status_module \
-		--with-http_dav_module \
-		--with-http_realip_module \
-		--with-http_addition_module \
-		--with-http_slice_module \
-		--with-stream=dynamic \
-		--with-stream_ssl_preread_module \
-		--with-stream_realip_module \
-		--with-http_xslt_module=dynamic \
-		--with-http_image_filter_module=dynamic \
-		--with-http_geoip_module=dynamic \
-		--with-compat \
-		--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
-		--add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
-		--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
-		--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
-		--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
-		--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
-		--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-		--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
+	--user=nginx \
+	--group=nginx \
+	--prefix=/etc/nginx \
+	--pid-path=/var/run/nginx.pid \
+	--lock-path=/var/run/nginx.lock \
+	--sbin-path=/usr/sbin/nginx \
+	--modules-path=/usr/lib/nginx/modules \
+	--conf-path=/etc/nginx/nginx.conf \
+	--error-log-path=/var/log/nginx/error.log \
+	--http-log-path=/var/log/nginx/access.log \
+	--http-client-body-temp-path=/var/cache/nginx/client_temp \
+	--http-proxy-temp-path=/var/cache/nginx/proxy_temp \
+	--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
+	--with-pcre=../${NGINX_PCRE2_VERSION} \
+#	--with-pcre-opt='--enable-pcre2-16' \ # https://stackoverflow.com/questions/4655250/difference-between-utf-8-and-utf-16
+	--with-pcre-jit \
+	--without-select_module \
+	--without-poll_module \
+	--without-http_ssi_module \
+	--without-http_uwsgi_module \
+	--without-http_scgi_module \
+	--without-http_memcached_module \
+	--without-http_empty_gif_module \
+	--without-http_browser_module \
+	--without-http_userid_module \
+	--with-threads \
+	--with-file-aio \
+	--with-http_ssl_module \
+	--with-http_v2_module \
+	--with-http_realip_module \
+	--with-http_auth_request_module \
+	--with-http_sub_module \
+	--with-http_secure_link_module\
+	--with-http_stub_status_module \
+	--with-http_dav_module \
+	--with-http_realip_module \
+	--with-http_addition_module \
+	--with-http_slice_module \
+	--with-stream=dynamic \
+	--with-stream_ssl_preread_module \
+	--with-stream_realip_module \
+	--with-http_xslt_module=dynamic \
+	--with-http_image_filter_module=dynamic \
+	--with-http_geoip_module=dynamic \
+	--with-compat \
+	--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
+	--add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
+	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
+	--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
+	--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
+	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
+	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
+	--add-module=../nginx-upsync-module-${NGXMOD_UPSYNC_VERSION} \
+	--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # make && make install
 RUN make -j$(( `nproc` + 1 )) \
