@@ -36,7 +36,7 @@ jobs:
         context: docker-nginx/
         tags: ${{ secrets.DOCKER_REGISTRY_URI }}/nginx:1.24.0-${{ github.run_number }}
         cache-from: type=gha
-        cache-to: type=gha/
+        cache-to: type=gha
     - name: Telegram notify
       run: |
         cat <<- EOF | /usr/bin/curl -s -XPOST "https://api.telegram.org/${{ secrets.TGRM_BOT_SECRET }}/sendMessage" \
