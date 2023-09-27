@@ -26,7 +26,7 @@ ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 ENV NGXMOD_UPSYNC_VERSION=$IN_NGXMOD_UPSYNC_VERSION
 
 # install build dependencies
-RUN apk add --no-cache build-base curl gnupg linux-headers \
+RUN apk add --no-cache build-base curl git gnupg linux-headers \
 		libc-dev openssl-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
 
 # create builddir
