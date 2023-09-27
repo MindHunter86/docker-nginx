@@ -4,8 +4,29 @@ name: Nginx compiling
 on:
   push:
     branches: [ "*" ]
+  workflow_dispatch:
+
+concurrency: production
 
 jobs:
+  depot-build:
+    runs-on: ubuntu-latest
+    # Permissions to use OIDC token authentication
+    permissions:
+      contents: read
+      id-token: write
+      # Allows pushing to the GitHub Container Registry
+      packages: write
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          path: docker-nginx
+          submodules: recursive
+      - uses: depot/setup-action@v1
+      - uses: depot/build-push-action@v1
+        with:
+          project: 0rt4j1j1hh
+          context: .
   nginx_build:
     name: run docker container from Dockerfile with nginx compiling instructions
     runs-on: ubuntu-latest
