@@ -19,9 +19,6 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v3
-        with:
-          path: docker-nginx
-          submodules: recursive
       - uses: depot/setup-action@v1
       - uses: depot/build-push-action@v1
         with:
