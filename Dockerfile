@@ -128,6 +128,9 @@ RUN strip usr/sbin/nginx* \
 FROM alpine:latest
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
+# hadolint/hadolint - DL4006
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
 # user & group management
 RUN addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
