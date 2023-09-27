@@ -19,11 +19,14 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v3
+        with:
+          path: docker-nginx
+          submodules: recursive
       - uses: depot/setup-action@v1
       - uses: depot/build-push-action@v1
         with:
           project: 0rt4j1j1hh
-          context: .
+          context: docker-nginx/
   nginx_build:
     name: run docker container from Dockerfile with nginx compiling instructions
     runs-on: ubuntu-latest
