@@ -1,6 +1,5 @@
 # custom nginx by vkom
 FROM alpine:latest as builder
-
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
 ARG IN_NGINX_VERSION=1.24.0
@@ -124,6 +123,7 @@ RUN strip usr/sbin/nginx* \
 
 # RELEASE PACKAGE
 FROM alpine:latest
+LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
 # user & group management
 RUN addgroup -S nginx \
