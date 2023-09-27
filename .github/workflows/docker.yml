@@ -29,12 +29,12 @@ jobs:
           project: 0rt4j1j1hh
           tags: ghcr.io/${{ env.GH_LWREPONAME }}:1.24.0-${{ github.run_number }}
           push: true
-    - name: Telegram notify
-      run: |
-        cat <<- EOF | /usr/bin/curl -s -XPOST "https://api.telegram.org/${{ secrets.TGRM_BOT_SECRET }}/sendMessage" \
-          -d chat_id="${{ secrets.TGRM_CHAT_ID }}" -d text="$(cat /dev/stdin)" &>/dev/null
-        Nginx Builder (Github Actions)
+      - name: Telegram notify
+        run: |
+          cat <<- EOF | /usr/bin/curl -s -XPOST "https://api.telegram.org/${{ secrets.TGRM_BOT_SECRET }}/sendMessage" \
+            -d chat_id="${{ secrets.TGRM_CHAT_ID }}" -d text="$(cat /dev/stdin)" &>/dev/null
+          Nginx Builder (Github Actions)
 
-        Build ${{ github.run_number }} of job ${{ github.workflow }} has been completed.
-        Builded commit: ${{ github.sha }}
-        EOF
+          Build ${{ github.run_number }} of job ${{ github.workflow }} has been completed.
+          Builded commit: ${{ github.sha }}
+          EOF
