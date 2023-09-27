@@ -51,6 +51,10 @@ RUN curl -f -sS -L https://github.com/weibocom/nginx-upsync-module/archive/${NGX
 WORKDIR /usr/src/nginx/nginx-upsync-module-${NGXMOD_UPSYNC_VERSION}
 RUN curl -f -sSL -q http://beta.mh00.net:8080/vOwzu/ngx_http_upsync_module.path | patch -p1
 
+# brotli initialization
+WORKDIR /usr/src/nginx/ngx_brotli-${NGXMOD_BROTLI_VERSION}
+RUN git submodule update --init
+
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch
