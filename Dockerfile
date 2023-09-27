@@ -22,6 +22,9 @@ ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
 ENV NGXMOD_BROTLI_VERSION=$IN_NGXMOD_BROTLI_VERSION
 ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 
+# hadolint/hadolint - DL4006
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
 		libc-dev openssl-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
@@ -32,7 +35,7 @@ RUN mkdir -p /usr/src/nginx \
 WORKDIR /usr/src/nginx
 
 # download nginx & nginx modules
-RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
+RUN set -o curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC . \
