@@ -12,7 +12,6 @@ ARG IN_NGXMOD_RDNS_VERSION=master
 ARG IN_NGXMOD_HEADMR_VERSION=master
 ARG IN_NGXMOD_BROTLI_VERSION=master
 ARG IN_NGXMOD_VTS_VERSION=0.2.1
-ARG IN_NGXMOD_UPSYNC_VERSION=master
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGINX_PCRE2_VERSION=$IN_NGINX_PCRE2_VERSION
@@ -23,7 +22,6 @@ ENV NGXMOD_RDNS_VERSION=$IN_NGXMOD_RDNS_VERSION
 ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
 ENV NGXMOD_BROTLI_VERSION=$IN_NGXMOD_BROTLI_VERSION
 ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
-ENV NGXMOD_UPSYNC_VERSION=$IN_NGXMOD_UPSYNC_VERSION
 
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
@@ -35,28 +33,22 @@ RUN mkdir -p /usr/src/nginx \
 WORKDIR /usr/src/nginx
 
 # download nginx & nginx modules
-RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC .
-RUN curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC .
-RUN curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC .
-RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC .
-RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
-RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxvC .
-RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxvC .
-# RUN curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_VERSION}.tar.gz | tar zxvC .
-RUN curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxvC .
-RUN curl -f -sS -L https://github.com/weibocom/nginx-upsync-module/archive/${NGXMOD_UPSYNC_VERSION}.tar.gz | tar zxvC .
-
-# patch upsync module
-# JFYI: patch rewrites upstream defaults for the consul_health
-WORKDIR /usr/src/nginx/nginx-upsync-module-${NGXMOD_UPSYNC_VERSION}
-RUN curl -f -sSL -q http://beta.mh00.net:8080/vOwzu/ngx_http_upsync_module.path | patch -p1
+RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC . \
+	# && curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_VERSION}.tar.gz | tar zxC .
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
-RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch
-RUN ./configure --help ||:
-RUN ../${NGINX_PCRE2_VERSION}/configure --help ||:
-RUN ./configure \
+RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
+	&& ./configure --help ||: \
+	&& ../${NGINX_PCRE2_VERSION}/configure --help ||: \
+	&& ./configure \
 	--user=nginx \
 	--group=nginx \
 	--prefix=/etc/nginx \
@@ -109,7 +101,6 @@ RUN ./configure \
 	--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	#--add-module=../nginx-upsync-module-${NGXMOD_UPSYNC_VERSION} \
 	--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # make && make install
@@ -137,7 +128,6 @@ FROM alpine:latest
 # user & group management
 RUN addgroup -S nginx \
 	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
-
 
 # copy files from build container && sync to root && source remove
 RUN apk add --no-cache rsync \
@@ -197,5 +187,4 @@ CMD ["nginx", "-g", "daemon off;"]
 #	&& apk add --no-cache --virtual .nginx-rundeps $runDeps \
 #	&& apk del .build-deps \
 #	&& apk del .gettext \
-#	&& mv /tmp/envsubst /usr/local/bin/ \
-
+#	&& mv /tmp/envsubst /usr/local/bin/
