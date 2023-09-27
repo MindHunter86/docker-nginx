@@ -1,5 +1,5 @@
 # Github Actions: Mytime Production Deploy
-name: Nginx compiling
+name: Building From Sources
 
 on:
   push:
@@ -10,7 +10,6 @@ concurrency: production
 
 jobs:
   depot-build:
-    name: run docker container from Dockerfile with nginx compiling instructions
     runs-on: ubuntu-latest
     # Permissions to use OIDC token authentication
     permissions:
