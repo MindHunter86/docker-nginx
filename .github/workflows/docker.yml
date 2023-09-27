@@ -10,6 +10,7 @@ concurrency: production
 
 jobs:
   depot-build:
+    name: run docker container from Dockerfile with nginx compiling instructions
     runs-on: ubuntu-latest
     # Permissions to use OIDC token authentication
     permissions:
@@ -19,45 +20,15 @@ jobs:
       packages: write
     steps:
       - uses: actions/checkout@v3
-        with:
-          path: docker-nginx
-          submodules: recursive
       - uses: depot/setup-action@v1
+      - name: Get lowercase repository name
+        run: |
+          echo "GH_LWREPONAME=${GITHUB_REPOSITORY,,}" >>${GITHUB_ENV}
       - uses: depot/build-push-action@v1
         with:
           project: 0rt4j1j1hh
-          context: docker-nginx/
-  nginx_build:
-    name: run docker container from Dockerfile with nginx compiling instructions
-    runs-on: ubuntu-latest
-    steps:
-    - name: Get Mytime-Dockerfiles repo
-      uses: actions/checkout@v2
-      with:
-        path: docker-nginx
-        submodules: recursive
-    # here we trying to use NEW github cache backend - https://github.com/docker/buildx/pull/535
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-      with:
-        version: v0.6.0-rc1
-        driver-opts: image=moby/buildkit:v0.9.0-rc2,network=host
-        buildkitd-flags: --debug
-    - name: MindHunter's registry login
-      uses: docker/login-action@v1
-      with:
-        registry: ${{ secrets.DOCKER_REGISTRY_URI }}
-        username: ${{ secrets.DOCKER_REGISTRY_USERNAME }}
-        password: ${{ secrets.DOCKER_REGISTRY_PASSWORD }}
-    - name: Build and export nginx image
-      uses: docker/build-push-action@v2
-      with:
-        push: true
-        pull: false
-        context: docker-nginx/
-        tags: ${{ secrets.DOCKER_REGISTRY_URI }}/nginx:1.24.0-${{ github.run_number }}
-        cache-from: type=gha
-        cache-to: type=gha
+          tags: ghcr.io/${{ env.GH_LWREPONAME }}:1.24.0-${{ github.run_number }}
+          push: true
     - name: Telegram notify
       run: |
         cat <<- EOF | /usr/bin/curl -s -XPOST "https://api.telegram.org/${{ secrets.TGRM_BOT_SECRET }}/sendMessage" \
