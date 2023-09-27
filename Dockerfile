@@ -42,7 +42,7 @@ RUN curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/$
 RUN curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC .
 RUN curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxvC .
-RUN curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_VERSION}.tar.gz | tar zxvC .
+# RUN curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxvC .
 RUN curl -f -sS -L https://github.com/weibocom/nginx-upsync-module/archive/${NGXMOD_UPSYNC_VERSION}.tar.gz | tar zxvC .
 
@@ -50,10 +50,6 @@ RUN curl -f -sS -L https://github.com/weibocom/nginx-upsync-module/archive/${NGX
 # JFYI: patch rewrites upstream defaults for the consul_health
 WORKDIR /usr/src/nginx/nginx-upsync-module-${NGXMOD_UPSYNC_VERSION}
 RUN curl -f -sSL -q http://beta.mh00.net:8080/vOwzu/ngx_http_upsync_module.path | patch -p1
-
-# brotli initialization
-WORKDIR /usr/src/nginx/ngx_brotli-${NGXMOD_BROTLI_VERSION}
-RUN git submodule update --init
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
@@ -107,7 +103,7 @@ RUN ./configure \
 	--with-http_geoip_module=dynamic \
 	--with-compat \
 	--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
-	--add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
+	# --add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
 	--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
