@@ -17,11 +17,11 @@ RUN git clone https://boringssl.googlesource.com/boringssl \
 # Make an .openssl directory for nginx and then symlink BoringSSL's include directory tree
 # Copy the BoringSSL crypto libraries to .openssl/lib so nginx can find them
 # Fix "Error 127" during build
-WORKDIR /src/boringssl
+WORKDIR /src/boringssl/build
 RUN mkdir -p .openssl/lib \
 	&& ln -s ../include .openssl/include \
-	&& cp build/crypto/libcrypto.a .openssl/lib \
-	&& cp build/ssl/libssl.a .openssl/lib \
+	&& cp crypto/libcrypto.a .openssl/lib \
+	&& cp ssl/libssl.a .openssl/lib \
 	&& touch .openssl/include/openssl/ssl.h
 
 WORKDIR /src
@@ -127,7 +127,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-http_image_filter_module=dynamic \
 	--with-http_geoip_module=dynamic \
 	--with-compat \
-	--with-openssl=../boringssl \
+	--with-openssl=../boringssl/build \
 	--with-http_v3_module \
 	--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
 	# --add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
@@ -136,8 +136,8 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	--with-ld-opt='-L../boringssl/.openssl/lib/' \
-	--with-cc-opt='-I../boringssl/.openssl/include -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
+	--with-ld-opt='-L../boringssl/build/.openssl/lib/' \
+	--with-cc-opt='-I../boringssl/build/.openssl/include/ -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # --with-cc-opt="-g -O2 -fPIE -fstack-protector-all -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -I $BUILDROOT/boringssl/.openssl/include/" \
 # --with-ld-opt="-Wl,-Bsymbolic-functions -Wl,-z,relro -L $BUILDROOT/boringssl/.openssl/lib/" \
