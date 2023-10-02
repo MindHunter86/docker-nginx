@@ -52,8 +52,7 @@ RUN mkdir -p /usr/src/nginx \
 	&& mkdir -p /usr/local/nginx
 WORKDIR /usr/src/nginx
 
-COPY --from=sslbuilder /src/boringssl/build ./boringssl-nginx
-RUN exit 1
+COPY --from=sslbuilder /src/boringssl/build ./boringssl
 
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
