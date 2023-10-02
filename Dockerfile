@@ -151,7 +151,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 #--add-module=./src/http/modules/ngx_pagespeed/)
 
 # BoringSSL: Fix "Error 127" during build
-RUN touch -v ../boringssl/.openssl/include/openssl/ssl.h
+RUN touch ../boringssl/.openssl/include/openssl/ssl.h
 
 # make && make install
 RUN make -j$(( `nproc` + 1 )) \
