@@ -1,4 +1,24 @@
 # custom nginx by vkom
+FROM alpine:latest as sslbuilder
+LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
+
+WORKDIR /tmp
+
+# hadolint/hadolint - DL4006
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
+RUN apk add --virtual buildutils --no-cache git curl gnupg \
+	build-base linux-headers perl libunwind-dev golang
+
+RUN git clone https://boringssl.googlesource.com/boringssl \
+	&& mkdir -p boringssl/build \
+	&& cd boringssl/build \
+	&& cmake .. \
+	&& make -j$(( `nproc` + 1 ))
+
+RUN ls -lah . boringssl boringssl/build
+
+
 FROM alpine:latest as builder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
@@ -24,6 +44,8 @@ ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
+RUN exit 1
 
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
