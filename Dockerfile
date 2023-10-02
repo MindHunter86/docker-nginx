@@ -125,7 +125,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	--with-ld-opt='-L../boringssl/ssl -L../boringssl/crypto' \
+	--with-ld-opt='-L../boringssl/build/ssl -L../boringssl/build/crypto' \
 	--with-cc-opt='-I../boringssl/include -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # make && make install
