@@ -2,7 +2,7 @@
 FROM alpine:latest as sslbuilder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
-WORKDIR /tmp
+WORKDIR /src
 
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
@@ -45,8 +45,6 @@ ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
-RUN exit 1
-
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
 		libc-dev openssl-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
@@ -55,6 +53,9 @@ RUN apk add --no-cache build-base curl git gnupg linux-headers \
 RUN mkdir -p /usr/src/nginx \
 	&& mkdir -p /usr/local/nginx
 WORKDIR /usr/src/nginx
+
+COPY --from=sslbuilder /src/boringssl/build ./boringssl-nginx
+RUN exit 1
 
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
