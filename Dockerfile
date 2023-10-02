@@ -116,6 +116,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-http_image_filter_module=dynamic \
 	--with-http_geoip_module=dynamic \
 	--with-compat \
+	--with-openssl=../boringssl/build \
 	--with-http_v3_module \
 	--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
 	# --add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
