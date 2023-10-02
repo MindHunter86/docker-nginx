@@ -20,7 +20,7 @@ RUN ls -lah . boringssl boringssl/build
 FROM alpine:latest as builder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
-ARG IN_NGINX_VERSION=1.24.0
+ARG IN_NGINX_VERSION=1.25.2
 ARG IN_NGINX_PCRE2_VERSION=pcre2-10.40
 ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
 ARG IN_NGXMOD_TSTCK_VERSION=master
@@ -45,7 +45,7 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
-		libc-dev openssl-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
+		libc-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
 
 # create builddir
 RUN mkdir -p /usr/src/nginx \
@@ -117,6 +117,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-http_image_filter_module=dynamic \
 	--with-http_geoip_module=dynamic \
 	--with-compat \
+	--with-http_v3_module \
 	--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
 	# --add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
@@ -124,7 +125,8 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
+	--with-ld-opt='-L../boringssl/build/ssl -L../boringssl/build/crypto' \
+	--with-cc-opt='-I../boringssl/include -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # make && make install
 RUN make -j$(( `nproc` + 1 )) \
