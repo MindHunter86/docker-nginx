@@ -2,13 +2,11 @@
 FROM alpine:latest as sslbuilder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
-WORKDIR /src
-
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+WORKDIR /src
 
-RUN apk add --virtual buildutils --no-cache git curl gnupg \
-	build-base linux-headers perl libunwind-dev golang
+RUN apk add --virtual buildutils --no-cache git curl gnupg build-base linux-headers perl libunwind-dev golang
 
 RUN git clone https://boringssl.googlesource.com/boringssl \
 	&& mkdir -p boringssl/build \
