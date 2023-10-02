@@ -6,7 +6,7 @@ LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 WORKDIR /src
 
-RUN apk add --no-cache git curl gnupg build-base linux-headers perl libunwind-dev go
+RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunwind-dev go
 
 RUN git clone https://boringssl.googlesource.com/boringssl \
 	&& mkdir -p boringssl/build \
