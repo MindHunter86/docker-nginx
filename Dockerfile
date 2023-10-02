@@ -7,23 +7,24 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunwind-dev go
 
-WORKDIR /src
-RUN git clone https://boringssl.googlesource.com/boringssl \
-	&& mkdir -p boringssl/build \
-	&& cd boringssl/build \
-	&& cmake .. \
-	&& make -j$(( `nproc` + 1 ))
+WORKDIR /usr/src/boringssl
+RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
+  && mkdir -v -p build .openssl/lib .openssl/include \
+  && ln -v -sf ../../include/openssl .openssl/include/openssl \
+  && touch .openssl/include/openssl/ssl.h \
+  && cmake -B./build -H. \
+  && make -C./build -j$(( `nproc` + 1 )) \
+  && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/ \
+	&& ls -lah . build .openssl
 
-# Make an .openssl directory for nginx and then symlink BoringSSL's include directory tree
-# Copy the BoringSSL crypto libraries to .openssl/lib so nginx can find them
-WORKDIR /src/boringssl
-RUN mkdir -p .openssl/lib \
-	&& ln -s ../include .openssl/include \
-	&& cp build/crypto/libcrypto.a .openssl/lib \
-	&& cp build/ssl/libssl.a .openssl/lib
+#	&& (git clone --depth=1 https://boringssl.googlesource.com/boringssl /usr/src/boringssl \
+#		&& mkdir -p /usr/src/boringssl/build /usr/src/boringssl/.openssl/lib /usr/src/boringssl/.openssl/include \
+#		&& ln -sf /usr/src/boringssl/include/openssl /usr/src/boringssl/.openssl/include/openssl \
+#		&& touch /usr/src/boringssl/.openssl/include/openssl/ssl.h \
+#		&& cmake -B/usr/src/boringssl/build -H/usr/src/boringssl -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+#		&& make -C/usr/src/boringssl/build -j$(getconf _NPROCESSORS_ONLN) \
+#		&& cp /usr/src/boringssl/build/crypto/libcrypto.a /usr/src/boringssl/build/ssl/libssl.a /usr/src/boringssl/.openssl/lib/) \
 
-WORKDIR /src
-RUN ls -lah . boringssl boringssl/build
 
 
 FROM alpine:latest as builder
@@ -61,7 +62,7 @@ RUN mkdir -p /usr/src/nginx \
 	&& mkdir -p /usr/local/nginx
 WORKDIR /usr/src/nginx
 
-COPY --from=sslbuilder /src/boringssl ./boringssl
+COPY --from=sslbuilder /usr/src/boringssl ./boringssl
 
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
