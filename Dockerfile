@@ -24,6 +24,7 @@ RUN mkdir -p .openssl/lib \
 	&& cp build/ssl/libssl.a .openssl/lib \
 	&& touch .openssl/include/openssl/ssl.h
 
+WORKDIR /src
 RUN ls -lah . boringssl boringssl/build
 
 
