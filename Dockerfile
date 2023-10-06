@@ -80,18 +80,10 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-pcre=../${NGINX_PCRE2_VERSION} \
 #	--with-pcre-opt='--enable-pcre2-16' \ # https://stackoverflow.com/questions/4655250/difference-between-utf-8-and-utf-16
 	--with-pcre-jit \
-	--without-select_module \
-	--without-poll_module \
 	--without-http_ssi_module \
-	--without-http_uwsgi_module \
-	--without-http_scgi_module \
 	--without-http_memcached_module \
 	--without-http_empty_gif_module \
-	--without-http_browser_module \
 	--without-http_userid_module \
-	--without-http_slice_module \
-	--without-http_dav_module \
-	--without-http_addition_module \
 	--without-http_autoindex_module \
 	--without-http_fastcgi_module \
 	--without-http_uwsgi_module \
