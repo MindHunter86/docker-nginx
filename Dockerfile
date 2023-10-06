@@ -63,7 +63,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	&& ./configure --help ||: \
 	&& ../${NGINX_PCRE2_VERSION}/configure --help ||: \
 	&& ./configure \
-	--build="MindHunter86's HTTP3-QUIC custom build with BoringSSL" \
+	--build="MindHunter86's custom build with BoringSSL & HTTP3-QUIC" \
 	--user=nginx \
 	--group=nginx \
 	--prefix=/etc/nginx \
@@ -89,22 +89,28 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--without-http_empty_gif_module \
 	--without-http_browser_module \
 	--without-http_userid_module \
+	--without-http_slice_module \
+	--without-http_dav_module \
+	--without-http_addition_module \
+	--without-http_autoindex_module \
+	--without-http_fastcgi_module \
+	--without-http_uwsgi_module \
+	--without-http_scgi_module \
+	--without-http_grpc_module \
+	--without-http_browser_module \
+	--with-compat \
 	--with-threads \
 	--with-file-aio \
 	--with-http_ssl_module \
 	--with-http_v2_module \
+	--with-http_v3_module \
 	--with-http_realip_module \
 	--with-http_auth_request_module \
 	--with-http_sub_module \
 	--with-http_secure_link_module\
 	--with-http_stub_status_module \
-	--with-http_dav_module \
 	--with-http_realip_module \
-	--with-http_addition_module \
-	--with-http_slice_module \
 	--with-http_geoip_module=dynamic \
-	--with-compat \
-	--with-http_v3_module \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
