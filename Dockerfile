@@ -102,6 +102,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-http_secure_link_module\
 	--with-http_stub_status_module \
 	--with-http_realip_module \
+	--with-http_gzip_static_module \
 	--with-http_geoip_module=dynamic \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
