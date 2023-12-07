@@ -32,7 +32,7 @@ jobs:
       - uses: depot/build-push-action@v1
         with:
           project: 0rt4j1j1hh
-          tags: ghcr.io/${{ env.GH_LWREPONAME }}:1.24.0-${{ github.run_number }}
+          tags: ghcr.io/${{ env.GH_LWREPONAME }}:1.25.3-${{ github.run_number }}
           push: true
       - name: Telegram notify
         run: |
