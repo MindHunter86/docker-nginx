@@ -24,7 +24,7 @@ RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
 FROM alpine:latest as builder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
-ARG IN_NGINX_VERSION=1.25.3
+ARG IN_NGINX_VERSION=1.24.0
 ARG IN_NGINX_PCRE2_VERSION=pcre2-10.42
 ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
 ARG IN_NGXMOD_HEADMR_VERSION=master
@@ -53,17 +53,17 @@ RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | ta
 	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC .
 
-# get path for nginx 1.25.1 from Cloudflare (Dynamic TLS records patch CloudFlare support)
-RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.25.1%2B.patch -o dynamic_tls_records_1.25.2.patch
+# get path for nginx 1.17.7+ from Cloudflare (Dynamic TLS records patch CloudFlare support)
+RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.17.7%2B.patch -o dynamic_tls_records.patch
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
-	&& patch -p1 < ../dynamic_tls_records_1.25.2.patch \
+	&& patch -p1 < ../dynamic_tls_records.patch \
 	&& ./configure --help ||: \
 	&& ../${NGINX_PCRE2_VERSION}/configure --help ||: \
 	&& ./configure \
-	--build="MindHunter86's custom build with BoringSSL & HTTP3-QUIC" \
+	--build="MindHunter86's custom build with BoringSSL" \
 	--user=nginx \
 	--group=nginx \
 	--prefix=/etc/nginx \
@@ -80,6 +80,8 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-pcre=../${NGINX_PCRE2_VERSION} \
 #	--with-pcre-opt='--enable-pcre2-16' \ # https://stackoverflow.com/questions/4655250/difference-between-utf-8-and-utf-16
 	--with-pcre-jit \
+	--without-select_module \
+	--without-poll_module \
 	--without-http_ssi_module \
 	--without-http_memcached_module \
 	--without-http_empty_gif_module \
@@ -95,7 +97,6 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-file-aio \
 	--with-http_ssl_module \
 	--with-http_v2_module \
-	--with-http_v3_module \
 	--with-http_realip_module \
 	--with-http_auth_request_module \
 	--with-http_sub_module \
