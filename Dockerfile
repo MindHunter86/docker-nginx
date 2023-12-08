@@ -24,6 +24,8 @@ RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
 FROM alpine:latest as builder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
+ARG TARGETPLATFORM
+
 ARG IN_NGINX_VERSION=1.24.0
 ARG IN_NGINX_PCRE2_VERSION=pcre2-10.42
 ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
@@ -41,7 +43,7 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
-		libc-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
+		libc-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev libaio libaio-dev
 
 WORKDIR /usr/src/nginx
 COPY --from=sslbuilder /usr/src/boringssl ./boringssl
@@ -53,17 +55,29 @@ RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | ta
 	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC .
 
-# get path for nginx 1.17.7+ from Cloudflare (Dynamic TLS records patch CloudFlare support)
-RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.17.7%2B.patch -o dynamic_tls_records.patch
+# source: github.com/kn007/patch
+# - Add HTTP2 HPACK Encoding Support
+# - Add Dynamic TLS Record Support
+# https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch
+RUN curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch -o cloudflares_customs.patch
+
+# or below : `Add Dynamic TLS Record Support only` for nginx 1.17.7+
+# RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.17.7%2B.patch -o cloudflares_customs.patch
+
+RUN ls -lah /usr/src/nginx ||:
+RUN ls -lah /usr/src/nginx/boringssl ||:
+RUN ls -lah /usr/src/nginx/boringssl/.openssl/lib/ ||:
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
-	&& patch -p1 < ../dynamic_tls_records.patch \
-	&& ./configure --help ||: \
-	&& ../${NGINX_PCRE2_VERSION}/configure --help ||: \
+	&& patch -p1 < ../cloudflares_customs.patch \
+	&& if [ "$TARGETPLATFORM" = "linux/arm64" ]; then ARCH_CC=""; else ARCH_CC="-m64"; fi \
+	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
+	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
+	&& ./configure --help ||: && ../${NGINX_PCRE2_VERSION}/configure --help ||: \
 	&& ./configure \
-	--build="MindHunter86's custom build with BoringSSL" \
+	--build="Custom build with BoringSSL, Cloudflare's HPACK+TLS patch" \
 	--user=nginx \
 	--group=nginx \
 	--prefix=/etc/nginx \
@@ -105,21 +119,23 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-http_realip_module \
 	--with-http_gzip_static_module \
 	--with-http_geoip_module=dynamic \
+	# --with-openssl=/usr/src/nginx/boringssl/ \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	--with-ld-opt='-L../boringssl/.openssl/lib/' \
-	--with-cc-opt='-I../boringssl/.openssl/include/ -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
+	--with-ld-opt='-L /usr/src/nginx/boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
+	--with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -march=native -mtune=native -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -flto -ffat-lto-objects -fexceptions -fstack-protector-strong -fcode-hoisting -fPIC --param=ssp-buffer-size=4 -grecord-gcc-switches -DTCP_FASTOPEN=23"
 
+# gcc options manual from redhat
+# https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc
 
-	# --with-ld-opt='-L../boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
+# ? to delete (the backup):
+# --with-ld-opt='-L../boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
+# --with-cc-opt='-I /usr/src/nginx/boringssl/.openssl/include/ -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
-# --with-cc-opt="-g -O2 -fPIE -fstack-protector-all -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -I $BUILDROOT/boringssl/.openssl/include/" \
-# --with-ld-opt="-Wl,-Bsymbolic-functions -Wl,-z,relro -L $BUILDROOT/boringssl/.openssl/lib/" \
-
-# fastopen
-#--with-cc-opt='-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -DTCP_FASTOPEN=23'
-#--with-ld-opt='-Wl,-z,relro -Wl,-E'
+# libaio problem aarch64
+# --with-cc-opt="-m64 -march=native -mtune=native -DTCP_FASTOPEN=23 -g -O3 -fstack-protector-strong -flto -ffat-lto-objects -fuse-ld=gold --param=ssp-buffer-size=4 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -fcode-hoisting -Wp,-D_FORTIFY_SOURCE=2"
+# --with-cc-opt="     -march=native -mtune=native -DTCP_FASTOPEN=23 -g -O3 -fstack-protector-strong -flto -ffat-lto-objects -fuse-ld=gold --param=ssp-buffer-size=4 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -fcode-hoisting -Wp,-D_FORTIFY_SOURCE=2"
 
 # debian apt repo
 #--with-cc-opt='-g -O2 -fdebug-prefix-map=/data/builder/debuild/nginx-1.19.0/debian/debuild-base/nginx-1.19.0=. -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC'

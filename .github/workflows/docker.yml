@@ -32,9 +32,8 @@ jobs:
       - uses: depot/build-push-action@v1
         with:
           project: 0rt4j1j1hh
-          tags: ghcr.io/${{ env.GH_LWREPONAME }}:1.25.3-${{ github.run_number }}
-          # platforms: linux/amd64,linux/arm64
-          platforms: linux/arm64
+          tags: ghcr.io/${{ env.GH_LWREPONAME }}:1.24.0-${{ github.run_number }}
+          platforms: linux/amd64,linux/arm64
           push: true
       - name: Telegram notify
         run: |
