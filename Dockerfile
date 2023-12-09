@@ -119,7 +119,6 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-http_realip_module \
 	--with-http_gzip_static_module \
 	--with-http_geoip_module=dynamic \
-	# --with-openssl=/usr/src/nginx/boringssl/ \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
@@ -130,22 +129,11 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 # https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc
 
 # ? to delete (the backup):
-# --with-ld-opt='-L../boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
 # --with-cc-opt='-I /usr/src/nginx/boringssl/.openssl/include/ -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
-
-# libaio problem aarch64
-# --with-cc-opt="-m64 -march=native -mtune=native -DTCP_FASTOPEN=23 -g -O3 -fstack-protector-strong -flto -ffat-lto-objects -fuse-ld=gold --param=ssp-buffer-size=4 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -fcode-hoisting -Wp,-D_FORTIFY_SOURCE=2"
-# --with-cc-opt="     -march=native -mtune=native -DTCP_FASTOPEN=23 -g -O3 -fstack-protector-strong -flto -ffat-lto-objects -fuse-ld=gold --param=ssp-buffer-size=4 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -fcode-hoisting -Wp,-D_FORTIFY_SOURCE=2"
 
 # debian apt repo
 #--with-cc-opt='-g -O2 -fdebug-prefix-map=/data/builder/debuild/nginx-1.19.0/debian/debuild-base/nginx-1.19.0=. -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC'
 #--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie'
-
-## ... compare ... (pagespeed
-
-#-with-cc-opt='-g -O2 -fdebug-prefix-map=/data/builder/debuild/nginx-1.19.0/debian/debuild-base/nginx-1.19.0=. -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC'
-#--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie'
-#--add-module=./src/http/modules/ngx_pagespeed/)
 
 # make && make install
 RUN make -j$(( `nproc` + 1 )) \
