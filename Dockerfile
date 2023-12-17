@@ -77,7 +77,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
 	&& ./configure --help ||: && ../${NGINX_PCRE2_VERSION}/configure --help ||: \
 	&& ./configure \
-	--build="Custom build with BoringSSL, Cloudflare's HPACK+TLS patch for ${ARCH_CC}" \
+	--build="Custom build with BoringSSL, Cloudflare's HPACK+TLS patch for ${TARGETPLATFORM}" \
 	--user=nginx \
 	--group=nginx \
 	--prefix=/etc/nginx \
