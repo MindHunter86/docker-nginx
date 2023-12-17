@@ -123,7 +123,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
 	--with-ld-opt='-L /usr/src/nginx/boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
-	--with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23"
+	--with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security --param=ssp-buffer-size=4 -DTCP_FASTOPEN=23"
 
 # gcc options manual from redhat
 # https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc
