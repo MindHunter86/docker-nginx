@@ -72,7 +72,7 @@ RUN ls -lah /usr/src/nginx/boringssl/.openssl/lib/ ||:
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
 	&& patch -p1 < ../cloudflares_customs.patch \
-	&& if [ "$TARGETPLATFORM" = "linux/arm64" ]; then ARCH_CC=""; else ARCH_CC="-m64 -march=znver1 -mtune=znver1 -mfma -mavx2 -m3dnow -fomit-frame-pointer"; fi \
+	&& if [ "$TARGETPLATFORM" = "linux/arm64" ]; then ARCH_CC=""; else ARCH_CC="-m64"; fi \
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
 	&& ./configure --help ||: && ../${NGINX_PCRE2_VERSION}/configure --help ||: \
@@ -123,7 +123,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
 	--with-ld-opt='-L /usr/src/nginx/boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
-	--with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -flto -ffat-lto-objects -fexceptions -fstack-protector-strong -fcode-hoisting -fPIC --param=ssp-buffer-size=4 -gsplit-dwarf -DTCP_FASTOPEN=23"
+	--with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -mtune=generic -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -flto -ffat-lto-objects -fexceptions -fstack-protector-strong -fcode-hoisting -fPIC --param=ssp-buffer-size=4 -gsplit-dwarf -DTCP_FASTOPEN=23"
 
 # -march=native -mtune=native
 # hetzner kaby lake march - '-march=skylake -O2 -pipe'
