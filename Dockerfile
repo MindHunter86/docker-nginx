@@ -185,12 +185,12 @@ RUN tar xvC / -f /nginx.rootfs.tar \
 RUN apk add --no-cache --virtual .gettext gettext \
 	&& mv /usr/bin/envsubst /tmp \
 	&& apk add --no-cache \
-		scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
+		$(scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
 			| awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
 			| sort -u \
 			| xargs -r apk info --installed \
 			| sort -u \
-		tzdata ca-certificates \
+		) tzdata ca-certificates \
 	&& mv -v /tmp/envsubst /usr/local/bin/ \
 	&& apk del .gettext
 
