@@ -26,8 +26,8 @@ LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
 ARG TARGETPLATFORM
 
-ARG IN_NGINX_VERSION=1.24.0
-ARG IN_NGINX_PCRE2_VERSION=pcre2-10.42
+ARG IN_NGINX_VERSION=1.26.0
+ARG IN_NGINX_PCRE2_VERSION=pcre2-10.43
 ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
 ARG IN_NGXMOD_HEADMR_VERSION=master
 ARG IN_NGXMOD_VTS_VERSION=0.2.2
@@ -43,7 +43,7 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
-		libc-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev libaio libaio-dev
+		libc-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev libaio libaio-dev
 
 WORKDIR /usr/src/nginx
 COPY --from=sslbuilder /usr/src/boringssl ./boringssl
@@ -123,7 +123,8 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
 	--with-ld-opt='-L /usr/src/nginx/boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
-	--with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -mtune=generic -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -flto -ffat-lto-objects -fexceptions -fstack-protector-strong -fcode-hoisting -fPIC --param=ssp-buffer-size=4 -gsplit-dwarf -DTCP_FASTOPEN=23"
+  --with-cc-opt='-I /usr/src/nginx/boringssl/.openssl/include/ -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic'
+	# --with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -mtune=generic -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -flto -ffat-lto-objects -fexceptions -fstack-protector-strong -fcode-hoisting -fPIC --param=ssp-buffer-size=4 -gsplit-dwarf -DTCP_FASTOPEN=23"
 
 # -march=native -mtune=native
 # hetzner kaby lake march - '-march=skylake -O2 -pipe'
