@@ -54,7 +54,8 @@ COPY --from=sslbuilder /usr/src/boringssl ./boringssl
 # - For BoringSSL support OCSP stapling
 # https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch
 # https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.17.7%2B.patch
-RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
+RUN apk add --no-cache curl \
+	&& curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_dynamic_tls_records.patch -o nginx_dynamic_tls_records.patch \
@@ -74,7 +75,7 @@ RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | ta
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN echo "ready" \
-	&& apk add --no-cache build-base curl git gnupg linux-headers \
+	&& apk add --no-cache build-base git gnupg linux-headers \
 	libc-dev pcre-dev pcre2-dev zlib-dev libxslt-dev gd-dev geoip-dev libaio libaio-dev \
 	&& echo "patching nginx_dynamic_tls_records.patch ..." \
 	&& patch -p1 < ../nginx_dynamic_tls_records.patch \
