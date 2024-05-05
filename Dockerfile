@@ -60,8 +60,8 @@ RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | ta
 	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_dynamic_tls_records.patch -O nginx_dynamic_tls_records.patch \
-	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/Enable_BoringSSL_OCSP.patch -O Enable_BoringSSL_OCSP.patch
+	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_dynamic_tls_records.patch -o nginx_dynamic_tls_records.patch \
+	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/Enable_BoringSSL_OCSP.patch -o Enable_BoringSSL_OCSP.patch
 
 	# && curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
 	# && patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
