@@ -175,7 +175,7 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # github.com/moby/moby/issues/25925
 # COPY --from=builder /usr/local/nginx/ /
-COPY --from=builder /usr/local/nginx /opt
+COPY --from=builder /usr/local/nginx /opt/nginx
 RUN mv -v /opt/nginx/* / \
 	&& rm -vrf /opt/nginx
 
