@@ -50,7 +50,7 @@ COPY --from=sslbuilder /usr/src/boringssl ./boringssl
 
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
-		libc-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev libaio libaio-dev
+		libc-dev pcre-dev pcre2-dev zlib-dev libxslt-dev gd-dev geoip-dev libaio libaio-dev
 
 # download nginx & nginx modules
 # AND
@@ -72,6 +72,10 @@ RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | ta
 	# && patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/nginx_error_log_limiting_v1_15.4.patch \
 	# --add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 
+	# && ../${NGINX_PCRE2_VERSION}/configure --help ||: 
+	# --with-pcre=../${NGINX_PCRE2_VERSION} \
+	# --with-pcre-opt='--enable-pcre2-16' \ https://stackoverflow.com/questions/4655250/difference-between-utf-8-and-utf-16
+
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN echo "ready" \
@@ -85,7 +89,7 @@ RUN echo "ready" \
 	&& if [ "$TARGETPLATFORM" = "linux/arm64" ]; then ARCH_CC=""; else ARCH_CC="-m64"; fi \
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
-	&& ./configure --help ||: && ../${NGINX_PCRE2_VERSION}/configure --help ||: \
+	&& ./configure --help ||: \
 	&& ./configure \
 	--build="Custom with BoringSSL, CF-TLS and BorSSL-OCSP patches for ${TARGETPLATFORM}" \
 	--user=nginx \
@@ -101,8 +105,6 @@ RUN echo "ready" \
 	--http-client-body-temp-path=/var/cache/nginx/client_temp \
 	--http-proxy-temp-path=/var/cache/nginx/proxy_temp \
 	--http-fastcgi-temp-path=/var/cache/nginx/fastcgi_temp \
-	--with-pcre=../${NGINX_PCRE2_VERSION} \
-#	--with-pcre-opt='--enable-pcre2-16' \ # https://stackoverflow.com/questions/4655250/difference-between-utf-8-and-utf-16
 	--with-pcre-jit \
 	--without-select_module \
 	--without-poll_module \
