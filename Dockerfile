@@ -163,7 +163,8 @@ RUN mkdir -p usr/lib/nginx/modules \
 	&& mkdir -p var/cache/nginx/proxy_temp \
 	&& mkdir -p var/cache/nginx/fastcgi_temp \
 	&& strip usr/sbin/nginx* \
-	&& strip usr/lib/nginx/modules/*so
+	&& strip usr/lib/nginx/modules/*so \
+	&& tar c . -f ../nginx.rootfs.tar
 
 
 ## STAGE - RELEASE PACKAGE ##
@@ -175,9 +176,9 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # github.com/moby/moby/issues/25925
 # COPY --from=builder /usr/local/nginx/ /
-COPY --from=builder /usr/local/nginx /opt/nginx
-RUN mv -v /opt/nginx/* / \
-	&& rm -vrf /opt/nginx
+COPY --from=builder /usr/local/nginx.rootfs.tar /
+RUN tar xvC / -f /nginx.rootfs.tar \
+	&& rm -vf /nginx.rootfs.tar
 
 # install run dependencies
 # install tzdata so users could set the timezones through the environment variables
