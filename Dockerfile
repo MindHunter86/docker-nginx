@@ -9,6 +9,10 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunwind-dev go
 
+# https://trac.nginx.org/nginx/ticket/2605
+#
+# just as note, using the "latest" version of BoringSSL, TLS v1.2 is not more available in nginx and nginx works only with TLS 1.3
+
 WORKDIR /usr/src/boringssl
 RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
   && mkdir -v -p build .openssl/lib .openssl/include \
@@ -72,8 +76,8 @@ RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | ta
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN echo "ready" \
 	&& ls -lah /usr/src/nginx ||: \
-	&& ls -lah /usr/src/nginx/boringssl ||: \
-	&& ls -lah /usr/src/nginx/boringssl/.openssl/lib/ ||: \
+	&& ls -lah ../boringssl ||: \
+	&& ls -lah ../boringssl/.openssl/lib/ ||: \
 	&& echo "patching nginx_dynamic_tls_records.patch ..." \
 	&& patch -p1 < ../nginx_dynamic_tls_records.patch \
 	&& echo "patching Enable_BoringSSL_OCSP.patch ..." \
@@ -127,8 +131,9 @@ RUN echo "ready" \
 	--with-http_geoip_module=dynamic \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	--with-ld-opt='-L /usr/src/nginx/boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
-	--with-cc-opt='-I /usr/src/nginx/boringssl/.openssl/include/ -m64 -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic'
+	--with-cc=c++ \
+	--with-ld-opt='-L ../boringssl/.openssl/lib -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
+	--with-cc-opt='-I ../boringssl/.openssl/include -x c -m64 -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic'
 	# --with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -mtune=generic -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -flto -ffat-lto-objects -fexceptions -fstack-protector-strong -fcode-hoisting -fPIC --param=ssp-buffer-size=4 -gsplit-dwarf -DTCP_FASTOPEN=23"
 
 # -march=native -mtune=native
