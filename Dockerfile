@@ -1,25 +1,41 @@
 # custom nginx by vkom
+
+## STAGE - BORINGSSL BUILD ##
+FROM alpine:latest as sslbuilder
+LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
+
+# hadolint/hadolint - DL4006
+SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
+
+RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunwind-dev go
+
+WORKDIR /usr/src/boringssl
+RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
+  && mkdir -v -p build .openssl/lib .openssl/include \
+  && ln -v -sf ../../include/openssl .openssl/include/openssl \
+  && touch .openssl/include/openssl/ssl.h \
+  && cmake -B./build -H. \
+  && make -C./build -j$(( `nproc` + 1 )) \
+  && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/ \
+	&& ls -lah . build .openssl
+
+
+## STAGE - NGINX BUILD ##
 FROM alpine:latest as builder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
+ARG TARGETPLATFORM
+
 ARG IN_NGINX_VERSION=1.24.0
-ARG IN_NGINX_PCRE2_VERSION=pcre2-10.40
+ARG IN_NGINX_PCRE2_VERSION=pcre2-10.42
 ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
-ARG IN_NGXMOD_TSTCK_VERSION=master
-ARG IN_NGXMOD_PAM_VERSION=1.5.3
-ARG IN_NGXMOD_RDNS_VERSION=master
 ARG IN_NGXMOD_HEADMR_VERSION=master
-ARG IN_NGXMOD_BROTLI_VERSION=master
-ARG IN_NGXMOD_VTS_VERSION=0.2.1
+ARG IN_NGXMOD_VTS_VERSION=0.2.2
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGINX_PCRE2_VERSION=$IN_NGINX_PCRE2_VERSION
 ENV NGXMOD_GRAPHITE_VERSION=$IN_NGXMOD_GRAPHITE_VERSION
-ENV NGXMOD_TSTCK_VERSION=$IN_NGXMOD_TSTCK_VERSION
-ENV NGXMOD_PAM_VERSION=$IN_NGXMOD_PAM_VERSION
-ENV NGXMOD_RDNS_VERSION=$IN_NGXMOD_RDNS_VERSION
 ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
-ENV NGXMOD_BROTLI_VERSION=$IN_NGXMOD_BROTLI_VERSION
 ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 
 # hadolint/hadolint - DL4006
@@ -27,30 +43,41 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
-		libc-dev openssl-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev
+		libc-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev linux-pam-dev libaio libaio-dev
 
-# create builddir
-RUN mkdir -p /usr/src/nginx \
-	&& mkdir -p /usr/local/nginx
 WORKDIR /usr/src/nginx
+COPY --from=sslbuilder /usr/src/boringssl ./boringssl
 
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/kyprizel/testcookie-nginx-module/archive/${NGXMOD_TSTCK_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/sto/ngx_http_auth_pam_module/archive/v${NGXMOD_PAM_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/flant/nginx-http-rdns/archive/${NGXMOD_RDNS_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC .
-	# && curl -f -sS -L https://github.com/google/ngx_brotli/archive/${NGXMOD_BROTLI_VERSION}.tar.gz | tar zxC .
+
+# source: github.com/kn007/patch
+# - Add HTTP2 HPACK Encoding Support
+# - Add Dynamic TLS Record Support
+# https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch
+RUN curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch -o cloudflares_customs.patch
+
+# or below : `Add Dynamic TLS Record Support only` for nginx 1.17.7+
+# RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.17.7%2B.patch -o cloudflares_customs.patch
+
+RUN ls -lah /usr/src/nginx ||:
+RUN ls -lah /usr/src/nginx/boringssl ||:
+RUN ls -lah /usr/src/nginx/boringssl/.openssl/lib/ ||:
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
-	&& ./configure --help ||: \
-	&& ../${NGINX_PCRE2_VERSION}/configure --help ||: \
+	&& patch -p1 < ../cloudflares_customs.patch \
+	&& if [ "$TARGETPLATFORM" = "linux/arm64" ]; then ARCH_CC=""; else ARCH_CC="-m64"; fi \
+	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
+	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
+	&& ./configure --help ||: && ../${NGINX_PCRE2_VERSION}/configure --help ||: \
 	&& ./configure \
+	--build="Custom build with BoringSSL, Cloudflare's HPACK+TLS patch for ${TARGETPLATFORM}" \
 	--user=nginx \
 	--group=nginx \
 	--prefix=/etc/nginx \
@@ -70,12 +97,16 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--without-select_module \
 	--without-poll_module \
 	--without-http_ssi_module \
-	--without-http_uwsgi_module \
-	--without-http_scgi_module \
 	--without-http_memcached_module \
 	--without-http_empty_gif_module \
-	--without-http_browser_module \
 	--without-http_userid_module \
+	--without-http_autoindex_module \
+	--without-http_fastcgi_module \
+	--without-http_uwsgi_module \
+	--without-http_scgi_module \
+	--without-http_grpc_module \
+	--without-http_browser_module \
+	--with-compat \
 	--with-threads \
 	--with-file-aio \
 	--with-http_ssl_module \
@@ -85,28 +116,32 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-http_sub_module \
 	--with-http_secure_link_module\
 	--with-http_stub_status_module \
-	--with-http_dav_module \
 	--with-http_realip_module \
-	--with-http_addition_module \
-	--with-http_slice_module \
-	--with-stream=dynamic \
-	--with-stream_ssl_preread_module \
-	--with-stream_realip_module \
-	--with-http_xslt_module=dynamic \
-	--with-http_image_filter_module=dynamic \
+	--with-http_gzip_static_module \
 	--with-http_geoip_module=dynamic \
-	--with-compat \
-	--add-dynamic-module=../ngx_http_auth_pam_module-${NGXMOD_PAM_VERSION} \
-	# --add-dynamic-module=../ngx_brotli-${NGXMOD_BROTLI_VERSION} \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
-	--add-module=../testcookie-nginx-module-${NGXMOD_TSTCK_VERSION} \
-	--add-module=../nginx-http-rdns-${NGXMOD_RDNS_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	--with-cc-opt='-O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -mtune=generic'
+	--with-ld-opt='-L /usr/src/nginx/boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
+	--with-cc-opt="-I /usr/src/nginx/boringssl/.openssl/include/ ${ARCH_CC} -mtune=generic -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -Wimplicit-fallthrough=0 -Wno-deprecated-declarations -flto -ffat-lto-objects -fexceptions -fstack-protector-strong -fcode-hoisting -fPIC --param=ssp-buffer-size=4 -gsplit-dwarf -DTCP_FASTOPEN=23"
+
+# -march=native -mtune=native
+# hetzner kaby lake march - '-march=skylake -O2 -pipe'
+# hetzner amd apic - '-march=znver1 -mtune=znver1 -mfma -mavx2 -m3dnow -fomit-frame-pointer'
+
+# gcc options manual from redhat
+# https://developers.redhat.com/blog/2018/03/21/compiler-and-linker-flags-gcc
+
+# ? to delete (the backup):
+# --with-cc-opt='-I /usr/src/nginx/boringssl/.openssl/include/ -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
+
+# debian apt repo
+#--with-cc-opt='-g -O2 -fdebug-prefix-map=/data/builder/debuild/nginx-1.19.0/debian/debuild-base/nginx-1.19.0=. -fstack-protector-strong -Wformat -Werror=format-security -Wp,-D_FORTIFY_SOURCE=2 -fPIC'
+#--with-ld-opt='-Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie'
 
 # make && make install
 RUN make -j$(( `nproc` + 1 )) \
+	&& mkdir -vp /usr/local/nginx \
 	&& make DESTDIR=/usr/local/nginx install
 
 # mkdir for dynamic modules, configs, ssl, caches
@@ -124,7 +159,7 @@ RUN strip usr/sbin/nginx* \
 	&& strip usr/lib/nginx/modules/*so
 
 
-# RELEASE PACKAGE
+## STAGE - RELEASE PACKAGE ##
 FROM alpine:latest
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
@@ -144,6 +179,7 @@ RUN rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
 	&& apk del rsync
 
 # install run dependencies
+# install tzdata so users could set the timezones through the environment variables
 RUN apk add --no-cache --virtual .gettext gettext \
 	&& mv /usr/bin/envsubst /tmp \
 	&& apk add --no-cache --virtual .nginx-rundeps $( \
@@ -152,22 +188,17 @@ RUN apk add --no-cache --virtual .gettext gettext \
 			| sort -u \
 			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 			| xargs \
-		) \
+		) tzdata ca-certificates \
 	&& apk del .gettext \
 	&& mv /tmp/envsubst /usr/local/bin/
 
-# install tzdata so users could set the timezones through the environment variables
-RUN apk add --no-cache tzdata
-
-# update chmod for nginx ssl dir
-RUN chown root:root /etc/nginx/ssl \
-	&& chmod 0100 /etc/nginx/ssl
-
 # remove nginx.conf for future mounting:
-RUN rm -vf /etc/nginx/nginx.conf
-
+# update chmod for nginx ssl dir
 # forward request and error logs to docker log collector
-RUN ln -sf /dev/stdout /var/log/nginx/access.log \
+RUN rm -vf /etc/nginx/nginx.conf \
+	&& chown root:root /etc/nginx/ssl \
+	&& chmod 0100 /etc/nginx/ssl \
+	&& ln -sf /dev/stdout /var/log/nginx/access.log \
 	&& ln -sf /dev/stderr /var/log/nginx/error.log
 
 EXPOSE 80
@@ -176,14 +207,13 @@ STOPSIGNAL SIGTERM
 
 CMD ["nginx", "-g", "daemon off;"]
 
-#	\
+##
 #	# Bring in gettext so we can get `envsubst`, then throw
 #	# the rest away. To do this, we need to install `gettext`
 #	# then move `envsubst` out of the way so `gettext` can
 #	# be deleted completely, then move `envsubst` back.
 #	&& apk add --no-cache --virtual .gettext gettext \
 #	&& mv /usr/bin/envsubst /tmp/ \
-#	\
 #	&& runDeps="$( \
 #		scanelf --needed --nobanner --format '%n#p' /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
 #			| tr ',' '\n' \
@@ -192,5 +222,14 @@ CMD ["nginx", "-g", "daemon off;"]
 #	)" \
 #	&& apk add --no-cache --virtual .nginx-rundeps $runDeps \
 #	&& apk del .build-deps \
-#	&& apk del .gettext \
-#	&& mv /tmp/envsubst /usr/local/bin/
+#	&& apk del .gettext
+##
+# version from `nginx-modules/docker-nginx-boringssl`
+#	&& runDeps="$( \
+#		scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
+#			| awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
+#			| sort -u \
+#			| xargs -r apk info --installed \
+#			| sort -u \
+#	) tzdata ca-certificates"
+##
