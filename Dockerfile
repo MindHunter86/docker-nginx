@@ -28,13 +28,13 @@ ARG TARGETPLATFORM
 
 ARG IN_NGINX_VERSION=1.26.0
 ARG IN_NGINX_PCRE2_VERSION=pcre2-10.43
-ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
+# ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
 ARG IN_NGXMOD_HEADMR_VERSION=master
 ARG IN_NGXMOD_VTS_VERSION=0.2.2
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGINX_PCRE2_VERSION=$IN_NGINX_PCRE2_VERSION
-ENV NGXMOD_GRAPHITE_VERSION=$IN_NGXMOD_GRAPHITE_VERSION
+# ENV NGXMOD_GRAPHITE_VERSION=$IN_NGXMOD_GRAPHITE_VERSION
 ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
 ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 
@@ -51,18 +51,22 @@ RUN apk add --no-cache build-base curl git gnupg linux-headers \
 # download nginx & nginx modules
 # AND
 # - Add HTTP2 HPACK Encoding Support
+# 	* Since Nginx 1.25.1, HPACK encoding will not support because the HTTP/2 server push support has been removed
 # - Add Dynamic TLS Record Support
+# - For BoringSSL support OCSP stapling
 # https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch
 # https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.17.7%2B.patch
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch -o cloudflares_customs.patch
+	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_dynamic_tls_records.patch -O nginx_dynamic_tls_records.patch \
+	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/Enable_BoringSSL_OCSP.patch -O Enable_BoringSSL_OCSP.patch
 
 	# && curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
 	# && patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
 	# && patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/nginx_error_log_limiting_v1_15.4.patch \
+	# --add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
@@ -70,13 +74,16 @@ RUN echo "ready" \
 	&& ls -lah /usr/src/nginx ||: \
 	&& ls -lah /usr/src/nginx/boringssl ||: \
 	&& ls -lah /usr/src/nginx/boringssl/.openssl/lib/ ||: \
-	&& patch -p1 < ../cloudflares_customs.patch \
+	&& echo "patching nginx_dynamic_tls_records.patch ..." \
+	&& patch -p1 < ../nginx_dynamic_tls_records.patch \
+	&& echo "patching Enable_BoringSSL_OCSP.patch ..." \
+	&& patch -p1 < ../Enable_BoringSSL_OCSP.patch \
 	&& if [ "$TARGETPLATFORM" = "linux/arm64" ]; then ARCH_CC=""; else ARCH_CC="-m64"; fi \
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
 	&& ./configure --help ||: && ../${NGINX_PCRE2_VERSION}/configure --help ||: \
 	&& ./configure \
-	--build="Custom with BoringSSL, CF HPACK+TLS patch for ${TARGETPLATFORM}" \
+	--build="Custom with BoringSSL, CF-TLS and BorSSL-OCSP patches for ${TARGETPLATFORM}" \
 	--user=nginx \
 	--group=nginx \
 	--prefix=/etc/nginx \
@@ -118,7 +125,6 @@ RUN echo "ready" \
 	--with-http_realip_module \
 	--with-http_gzip_static_module \
 	--with-http_geoip_module=dynamic \
-	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
 	--with-ld-opt='-L /usr/src/nginx/boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
@@ -143,6 +149,8 @@ RUN echo "ready" \
 RUN make -j$(( `nproc` + 1 )) \
 	&& mkdir -vp /usr/local/nginx \
 	&& make DESTDIR=/usr/local/nginx install
+
+# !! COPY ALL MODULES!
 
 # mkdir for dynamic modules, configs, ssl, caches
 WORKDIR /usr/local/nginx
