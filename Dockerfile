@@ -76,7 +76,7 @@ RUN echo "ready" \
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
 	&& ./configure --help ||: && ../${NGINX_PCRE2_VERSION}/configure --help ||: \
 	&& ./configure \
-	--build="Custom build with BoringSSL, Cloudflare's HPACK+TLS patch for ${TARGETPLATFORM}" \
+	--build="Custom with BoringSSL, CF HPACK+TLS patch for ${TARGETPLATFORM}" \
 	--user=nginx \
 	--group=nginx \
 	--prefix=/etc/nginx \
