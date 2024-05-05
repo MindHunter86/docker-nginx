@@ -57,9 +57,12 @@ RUN apk add --no-cache build-base curl git gnupg linux-headers \
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch -o cloudflares_customs.patch
+
+	# && curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
+	# && patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
+	# && patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/nginx_error_log_limiting_v1_15.4.patch \
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
@@ -67,8 +70,6 @@ RUN echo "ready" \
 	&& ls -lah /usr/src/nginx ||: \
 	&& ls -lah /usr/src/nginx/boringssl ||: \
 	&& ls -lah /usr/src/nginx/boringssl/.openssl/lib/ ||: \
-	&& patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
-	&& patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/nginx_error_log_limiting_v1_15.4.patch \
 	&& patch -p1 < ../cloudflares_customs.patch \
 	&& if [ "$TARGETPLATFORM" = "linux/arm64" ]; then ARCH_CC=""; else ARCH_CC="-m64"; fi \
 	&& echo "running on ${TARGETPLATFORM} so cc falgs - ${ARCH_CC}" > /dev/stderr \
