@@ -41,36 +41,32 @@ ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
+WORKDIR /usr/src/nginx
+COPY --from=sslbuilder /usr/src/boringssl ./boringssl
+
 # install build dependencies
 RUN apk add --no-cache build-base curl git gnupg linux-headers \
 		libc-dev pcre-dev zlib-dev libxslt-dev gd-dev geoip-dev libaio libaio-dev
 
-WORKDIR /usr/src/nginx
-COPY --from=sslbuilder /usr/src/boringssl ./boringssl
-
 # download nginx & nginx modules
-RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC .
-
-# source: github.com/kn007/patch
+# AND
 # - Add HTTP2 HPACK Encoding Support
 # - Add Dynamic TLS Record Support
 # https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch
-RUN curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch -o cloudflares_customs.patch
-
-# or below : `Add Dynamic TLS Record Support only` for nginx 1.17.7+
-# RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.17.7%2B.patch -o cloudflares_customs.patch
-
-RUN ls -lah /usr/src/nginx ||:
-RUN ls -lah /usr/src/nginx/boringssl ||:
-RUN ls -lah /usr/src/nginx/boringssl/.openssl/lib/ ||:
+# https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.17.7%2B.patch
+RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC . \
+	&& curl -f -sS -L https://raw.githubusercontent.com/kn007/patch/master/nginx_for_1.23.4.patch -o cloudflares_customs.patch
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN echo "ready" \
+	&& ls -lah /usr/src/nginx ||: \
+	&& ls -lah /usr/src/nginx/boringssl ||: \
+	&& ls -lah /usr/src/nginx/boringssl/.openssl/lib/ ||: \
 	&& patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
 	&& patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/nginx_error_log_limiting_v1_15.4.patch \
 	&& patch -p1 < ../cloudflares_customs.patch \
@@ -149,7 +145,7 @@ RUN make -j$(( `nproc` + 1 )) \
 
 # mkdir for dynamic modules, configs, ssl, caches
 WORKDIR /usr/local/nginx
-RUN mkdir -p /usr/lib/nginx/modules \
+RUN mkdir -p usr/lib/nginx/modules \
 	&& ln -s ../../usr/lib/nginx/modules etc/nginx/modules \
 	&& mkdir etc/nginx/conf.d \
 	&& mkdir etc/nginx/ssl \
@@ -175,7 +171,7 @@ RUN addgroup -S nginx \
 
 # copy files from build container && sync to root && source remove
 RUN apk add --no-cache rsync \
-	&& mkdir -p /usr/loca/nginx
+	&& mkdir -p /usr/local/nginx
 COPY --from=builder /usr/local/nginx /usr/local/nginx
 RUN rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
 	&& rm -rf /usr/local/nginx \
