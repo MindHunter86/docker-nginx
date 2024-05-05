@@ -46,10 +46,6 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 WORKDIR /usr/src/nginx
 COPY --from=sslbuilder /usr/src/boringssl ./boringssl
 
-# install build dependencies
-RUN apk add --no-cache build-base curl git gnupg linux-headers \
-		libc-dev pcre-dev pcre2-dev zlib-dev libxslt-dev gd-dev geoip-dev libaio libaio-dev
-
 # download nginx & nginx modules
 # AND
 # - Add HTTP2 HPACK Encoding Support
@@ -69,12 +65,17 @@ RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | ta
 	# && patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/nginx_error_log_limiting_v1_15.4.patch \
 	# --add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 
+# ls debug
+# && ls -lah /usr/src/nginx ||: \
+# && ls -lah ../boringssl ||: \
+# && ls -lah ../boringssl/.openssl/lib/ ||: \
+
+# install build dependencies
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 RUN echo "ready" \
-	&& ls -lah /usr/src/nginx ||: \
-	&& ls -lah ../boringssl ||: \
-	&& ls -lah ../boringssl/.openssl/lib/ ||: \
+	&& apk add --no-cache build-base curl git gnupg linux-headers \
+	libc-dev pcre-dev pcre2-dev zlib-dev libxslt-dev gd-dev geoip-dev libaio libaio-dev \
 	&& echo "patching nginx_dynamic_tls_records.patch ..." \
 	&& patch -p1 < ../nginx_dynamic_tls_records.patch \
 	&& echo "patching Enable_BoringSSL_OCSP.patch ..." \
@@ -150,9 +151,8 @@ RUN make -j$(( `nproc` + 1 )) \
 	&& mkdir -vp /usr/local/nginx \
 	&& make DESTDIR=/usr/local/nginx install
 
-# !! COPY ALL MODULES!
-
 # mkdir for dynamic modules, configs, ssl, caches
+# strip all bins and libs
 WORKDIR /usr/local/nginx
 RUN mkdir -p usr/lib/nginx/modules \
 	&& ln -s ../../usr/lib/nginx/modules etc/nginx/modules \
@@ -160,10 +160,8 @@ RUN mkdir -p usr/lib/nginx/modules \
 	&& mkdir etc/nginx/ssl \
 	&& mkdir -p var/cache/nginx/client_temp \
 	&& mkdir -p var/cache/nginx/proxy_temp \
-	&& mkdir -p var/cache/nginx/fastcgi_temp
-
-# strip all bins and libs
-RUN strip usr/sbin/nginx* \
+	&& mkdir -p var/cache/nginx/fastcgi_temp \
+	&& strip usr/sbin/nginx* \
 	&& strip usr/lib/nginx/modules/*so
 
 
@@ -174,46 +172,39 @@ LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
-# user & group management
-RUN addgroup -S nginx \
-	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx
-
-# copy files from build container && sync to root && source remove
-RUN apk add --no-cache rsync \
-	&& mkdir -p /usr/local/nginx
-COPY --from=builder /usr/local/nginx /usr/local/nginx
-RUN rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
-	&& rm -rf /usr/local/nginx \
-	&& apk del rsync
+COPY --from=builder /usr/local/nginx/ /
 
 # install run dependencies
 # install tzdata so users could set the timezones through the environment variables
 RUN apk add --no-cache --virtual .gettext gettext \
 	&& mv /usr/bin/envsubst /tmp \
-	&& apk add --no-cache --virtual .nginx-rundeps $( \
-		scanelf --needed --nobanner --format '%n#p' /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst	\
-			| tr ',' '\n' \
+	&& apk add --no-cache \
+		scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
+			| awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
 			| sort -u \
-			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-			| xargs \
-		) tzdata ca-certificates \
-	&& apk del .gettext \
-	&& mv /tmp/envsubst /usr/local/bin/
+			| xargs -r apk info --installed \
+			| sort -u \
+		tzdata ca-certificates \
+	&& mv -v /tmp/envsubst /usr/local/bin/ \
+	&& apk del .gettext
 
+# user & group management
 # remove nginx.conf for future mounting:
 # update chmod for nginx ssl dir
 # forward request and error logs to docker log collector
-RUN rm -vf /etc/nginx/nginx.conf \
-	&& chown root:root /etc/nginx/ssl \
-	&& chmod 0100 /etc/nginx/ssl \
+RUN addgroup -S nginx \
+	&& adduser -D -S -h /var/cache/nginx -s /sbin/nologin -G nginx nginx \
+	&& rm -vf /etc/nginx/nginx.conf \
+	&& chown -v root:root /etc/nginx/ssl \
+	&& chmod -v go-rwx /etc/nginx/ssl \
 	&& ln -sf /dev/stdout /var/log/nginx/access.log \
 	&& ln -sf /dev/stderr /var/log/nginx/error.log
 
 EXPOSE 80
-
 STOPSIGNAL SIGTERM
 
-CMD ["nginx", "-g", "daemon off;"]
+ENTRYPOINT [ "/usr/sbin/nginx" ]
+CMD [ "-g", "daemon off;" ]
 
 ##
 #	# Bring in gettext so we can get `envsubst`, then throw
@@ -229,7 +220,6 @@ CMD ["nginx", "-g", "daemon off;"]
 #			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
 #	)" \
 #	&& apk add --no-cache --virtual .nginx-rundeps $runDeps \
-#	&& apk del .build-deps \
 #	&& apk del .gettext
 ##
 # version from `nginx-modules/docker-nginx-boringssl`
