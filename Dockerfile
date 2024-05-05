@@ -173,7 +173,11 @@ LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
-COPY --from=builder /usr/local/nginx/ /
+# github.com/moby/moby/issues/25925
+# COPY --from=builder /usr/local/nginx/ /
+COPY --from=builder /usr/local/nginx /opt
+RUN mv -v /opt/nginx/* / \
+	&& rm -vrf /opt/nginx
 
 # install run dependencies
 # install tzdata so users could set the timezones through the environment variables
