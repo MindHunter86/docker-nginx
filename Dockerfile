@@ -184,15 +184,15 @@ RUN tar xvC / -f /nginx.rootfs.tar \
 # install tzdata so users could set the timezones through the environment variables
 RUN apk add --no-cache --virtual .gettext gettext \
 	&& mv /usr/bin/envsubst /tmp \
-	&& apk add --no-cache \
+	&& apk add --no-cache --virtual .nginx-rundeps \
 		$(scanelf --needed --nobanner /usr/sbin/nginx /usr/lib/nginx/modules/*.so /tmp/envsubst \
 			| awk '{ gsub(/,/, "\nso:", $2); print "so:" $2 }' \
 			| sort -u \
 			| xargs -r apk info --installed \
 			| sort -u \
 		) tzdata ca-certificates \
-	&& mv -v /tmp/envsubst /usr/local/bin/ \
-	&& apk del .gettext
+	&& apk del .gettext \
+	&& mv -v /tmp/envsubst /usr/local/bin/
 
 # user & group management
 # remove nginx.conf for future mounting:
