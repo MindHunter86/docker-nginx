@@ -109,7 +109,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-stream_realip_module \
 	--with-http_gzip_static_module \
 	--with-http_geoip_module=dynamic \
-  --with-openssl=../boringssl/.openssl \
+  --with-openssl=../boringssl \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
