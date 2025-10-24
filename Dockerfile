@@ -10,14 +10,16 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunwind-dev go
 
 WORKDIR /usr/src/boringssl
-RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
+RUN git clone https://boringssl.googlesource.com/boringssl . \
+	&& git checkout c52806157c97105da7fdc2b021d0a0fcd5186bf3 \
   && mkdir -v -p build .openssl/lib .openssl/include \
   && ln -v -sf ../../include/openssl .openssl/include/openssl \
   && touch .openssl/include/openssl/ssl.h \
   && cmake -B./build -H. \
   && make -C./build -j$(( `nproc` + 1 )) \
   && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/ \
-	&& ls -lah . build .openssl
+	&& ls -lah . build .openssl openssl/*
+# for more info look - https://trac.nginx.org/nginx/ticket/2605
 
 
 ## STAGE - NGINX BUILD ##
@@ -101,9 +103,11 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-http_sub_module \
 	--with-http_secure_link_module\
 	--with-http_stub_status_module \
-	--with-http_realip_module \
 	--with-http_gzip_static_module \
 	--with-http_geoip_module=dynamic \
+	--with-stream=dynamic \
+	--with-stream_ssl_preread_module \
+	--with-stream_realip_module \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
