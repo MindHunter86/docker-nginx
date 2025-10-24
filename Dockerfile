@@ -20,7 +20,7 @@ RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
   && ls -la build build/ssl .openssl \
   && pwd && ls -ls /usr/src/boringssl/build \
   && cp -v build/libcrypto.a build/libssl.a .openssl/lib/ \
-	&& ls -lah . build .openssl/* \
+	&& ls -lah . build build/ssl .openssl/* \
   && ls -la ../boringssl/.openssl/include/openssl/ \
   && ls -la ../boringssl/.openssl/include
 
@@ -111,12 +111,11 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-stream_realip_module \
 	--with-http_gzip_static_module \
 	--with-http_geoip_module=dynamic \
-  --with-openssl=../boringssl \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	--with-ld-opt='-L../boringssl/.openssl/lib/ -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
-	--with-cc-opt='-I../boringssl/.openssl/include/ -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
+	--with-ld-opt='-L../boringssl/build/.openssl/lib -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
+	--with-cc-opt='-I../boringssl/build/.openssl/include -O3 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # --with-cc-opt="-g -O2 -fPIE -fstack-protector-all -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -I $BUILDROOT/boringssl/.openssl/include/" \
 # --with-ld-opt="-Wl,-Bsymbolic-functions -Wl,-z,relro -L $BUILDROOT/boringssl/.openssl/lib/" \
