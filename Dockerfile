@@ -168,7 +168,8 @@ RUN addgroup -S nginx \
 RUN apk add --no-cache rsync \
 	&& mkdir -p /usr/loca/nginx
 COPY --from=builder /usr/local/nginx /usr/local/nginx
-RUN rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
+COPY --from=sslbuilder /usr/src/boringssl/.openssl/lib/ /usr/lib
+RUN ls -ls /usr/lib && rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
 	&& rm -rf /usr/local/nginx \
 	&& apk del rsync
 
