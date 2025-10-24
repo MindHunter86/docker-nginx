@@ -14,7 +14,7 @@ RUN git clone https://boringssl.googlesource.com/boringssl . \
 	&& git reset --hard c59bf8bf189dcbde868e04efcd53b705ed155231 \
   && mkdir -v -p build .openssl/lib \ 
   && ln -v -sf ../include .openssl/include \
-  && cmake -B./build -H. \
+  && cmake -DBUILD_SHARED_LIBS=1 -B./build -H. \
   && make -C./build -j$(( `nproc` + 1 )) \
   && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/ \
 	&& ls -lah . build .openssl .openssl/*
