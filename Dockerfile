@@ -7,7 +7,7 @@ LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 
-RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunwind-dev go libstdc++ libstdc++
+RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunwind-dev go libstdc++
 
 WORKDIR /usr/src/boringssl
 RUN git clone https://boringssl.googlesource.com/boringssl . \
@@ -185,7 +185,7 @@ RUN apk add --no-cache --virtual .gettext gettext \
 			| xargs \
 			| grep -v libcrypto \
 			| grep -v libsl \
-		) tzdata ca-certificates \
+		) libgcc libstdc++ tzdata ca-certificates \
 	&& apk del .gettext \
 	&& mv /tmp/envsubst /usr/local/bin/
 
