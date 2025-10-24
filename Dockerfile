@@ -17,7 +17,7 @@ RUN git clone https://boringssl.googlesource.com/boringssl . \
   && cmake -DBUILD_SHARED_LIBS=1 -B./build -H. \
   && make -C./build -j$(( `nproc` + 1 )) \
 	&& ls -lah . build .openssl .openssl/* \
-  && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/
+  && cp -v build/libcrypto.a build/libssl.a .openssl/lib/
 # for more info look - https://trac.nginx.org/nginx/ticket/2605
 
 
@@ -111,7 +111,7 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
 	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
-	--with-ld-opt='-L../boringssl/build/ssl -L../boringssl/build/crypto -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
+	--with-ld-opt='-L../boringssl/.openssl/lib -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
 	--with-cc-opt='-I../boringssl/include -O3 -g -pipe -Wno-error -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
 
 # --with-cc-opt="-g -O2 -fPIE -fstack-protector-all -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -I $BUILDROOT/boringssl/.openssl/include/" \
