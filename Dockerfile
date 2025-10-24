@@ -10,7 +10,8 @@ SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
 RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunwind-dev go
 
 WORKDIR /usr/src/boringssl
-RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
+RUN git clone https://boringssl.googlesource.com/boringssl . \
+  && git checkout 0.20241209.0 \
   && mkdir -v -p build .openssl/lib .openssl/include \
   && ln -v -sf ../../include/openssl .openssl/include/openssl \
   && touch .openssl/include/openssl/ssl.h \
