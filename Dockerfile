@@ -16,7 +16,7 @@ RUN git clone https://boringssl.googlesource.com/boringssl . \
   && ln -v -sf ../include .openssl/include \
   && cmake -B./build -H. \
   && make -C./build -j$(( `nproc` + 1 )) \
-  && echo cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/ \
+  && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/ \
 	&& ls -lah . build .openssl .openssl/*
 # for more info look - https://trac.nginx.org/nginx/ticket/2605
 
@@ -59,6 +59,7 @@ RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
+RUN cp -rfv ../boringssl/.openssl/lib/* /usr/lib/
 RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
 	&& patch -p1 < ../dynamic_tls_records_1.25.2.patch \
 	&& ./configure --help ||: \
