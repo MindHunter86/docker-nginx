@@ -19,7 +19,7 @@ RUN git clone https://boringssl.googlesource.com/boringssl . \
 	&& ls -lah . build .openssl .openssl/* \
   && cp -v build/libcrypto.so build/libssl.so .openssl/lib/
 # for more info look - https://trac.nginx.org/nginx/ticket/2605
-
+# also look - https://www.allsubjectsmatter.nl/docker-nginx-http3-and-brotli/
 
 ## STAGE - NGINX BUILD ##
 FROM alpine:latest as builder
