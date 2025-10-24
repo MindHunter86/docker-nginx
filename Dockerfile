@@ -20,7 +20,7 @@ RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
   && ls -la build build/ssl .openssl \
   && pwd && ls -ls /usr/src/boringssl/build \
   && cp -v build/libcrypto.a build/libssl.a .openssl/lib/ \
-	&& ls -lah . build .openssl
+	&& ls -lah . build .openssl/*
 
 
 ## STAGE - NGINX BUILD ##
