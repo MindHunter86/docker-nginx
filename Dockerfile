@@ -26,7 +26,7 @@ RUN git clone https://boringssl.googlesource.com/boringssl . \
 FROM alpine:latest as builder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
-ARG IN_NGINX_VERSION=1.25.3
+ARG IN_NGINX_VERSION=1.25.2
 ARG IN_NGINX_PCRE2_VERSION=pcre2-10.42
 ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
 ARG IN_NGXMOD_HEADMR_VERSION=master
