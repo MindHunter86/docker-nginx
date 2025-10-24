@@ -11,7 +11,7 @@ RUN apk add --no-cache git curl gnupg build-base cmake linux-headers perl libunw
 
 WORKDIR /usr/src/boringssl
 RUN git clone https://boringssl.googlesource.com/boringssl . \
-	&& git checkout c52806157c97105da7fdc2b021d0a0fcd5186bf3 \
+	&& git checkout c39e6cd9ec5acebb6de2adffc03cfe03b07f08ab \
   && mkdir -v -p build .openssl/lib .openssl/include \
   && ln -v -sf ../../include/openssl .openssl/include/openssl \
   && touch .openssl/include/openssl/ssl.h \
