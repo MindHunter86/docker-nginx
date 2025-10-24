@@ -16,6 +16,7 @@ RUN git clone --depth=1 https://boringssl.googlesource.com/boringssl . \
   && touch .openssl/include/openssl/ssl.h \
   && cmake -B./build -H. \
   && make -C./build -j$(( `nproc` + 1 )) \
+  && ls -la ./build \
   && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/ \
 	&& ls -lah . build .openssl
 
