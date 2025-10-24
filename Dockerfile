@@ -16,8 +16,8 @@ RUN git clone https://boringssl.googlesource.com/boringssl . \
   && ln -v -sf ../include .openssl/include \
   && cmake -DBUILD_SHARED_LIBS=1 -B./build -H. \
   && make -C./build -j$(( `nproc` + 1 )) \
-  && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/ \
-	&& ls -lah . build .openssl .openssl/*
+	&& ls -lah . build .openssl .openssl/* \
+  && cp -v build/crypto/libcrypto.a build/ssl/libssl.a .openssl/lib/
 # for more info look - https://trac.nginx.org/nginx/ticket/2605
 
 
