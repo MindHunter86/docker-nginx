@@ -169,7 +169,7 @@ RUN apk add --no-cache rsync \
 	&& mkdir -p /usr/loca/nginx
 COPY --from=builder /usr/local/nginx /usr/local/nginx
 COPY --from=sslbuilder /usr/src/boringssl/.openssl/lib/ /usr/lib
-RUN ls -ls /usr/lib && rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
+RUN rsync -aAxXv --numeric-ids --progress /usr/local/nginx/ / \
 	&& rm -rf /usr/local/nginx \
 	&& apk del rsync
 
@@ -182,7 +182,9 @@ RUN apk add --no-cache --virtual .gettext gettext \
 			| tr ',' '\n' \
 			| sort -u \
 			| awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-			| xargs \
+			| xargs | \
+			| grep -v libcrypto \
+			| grep -v libsl \
 		) tzdata ca-certificates \
 	&& apk del .gettext \
 	&& mv /tmp/envsubst /usr/local/bin/
