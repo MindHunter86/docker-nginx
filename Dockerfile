@@ -26,16 +26,16 @@ FROM alpine:latest as builder
 LABEL maintainer="mindhunter86 <mindhunter86@vkom.cc>"
 
 ARG IN_NGINX_VERSION=1.25.5
-ARG IN_NGINX_PCRE2_VERSION=pcre2-10.42
-ARG IN_NGXMOD_GRAPHITE_VERSION=master # v3.1
+ARG IN_NGINX_PCRE2_VERSION=pcre2-10.49
+ARG IN_NGXMOD_GRAPHITE_VERSION=master # v4.3
 ARG IN_NGXMOD_HEADMR_VERSION=master
-ARG IN_NGXMOD_VTS_VERSION=0.2.2
+# ARG IN_NGXMOD_VTS_VERSION=0.2.2
 
 ENV NGINX_VERSION=$IN_NGINX_VERSION
 ENV NGINX_PCRE2_VERSION=$IN_NGINX_PCRE2_VERSION
 ENV NGXMOD_GRAPHITE_VERSION=$IN_NGXMOD_GRAPHITE_VERSION
 ENV NGXMOD_HEADMR_VERSION=$IN_NGXMOD_HEADMR_VERSION
-ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
+# ENV NGXMOD_VTS_VERSION=$IN_NGXMOD_VTS_VERSION
 
 # hadolint/hadolint - DL4006
 SHELL ["/bin/ash", "-eo", "pipefail", "-c"]
@@ -51,8 +51,8 @@ COPY --from=sslbuilder /usr/src/boringssl ./boringssl
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/PCRE2Project/pcre2/releases/download/${NGINX_PCRE2_VERSION}/${NGINX_PCRE2_VERSION}.tar.gz | tar zxC . \
 	&& curl -f -sS -L https://github.com/mailru/graphite-nginx-module/archive/${NGXMOD_GRAPHITE_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC . \
-	&& curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC .
+	&& curl -f -sS -L https://github.com/openresty/headers-more-nginx-module/archive/${NGXMOD_HEADMR_VERSION}.tar.gz | tar zxC .
+	# && curl -f -sS -L https://github.com/vozlt/nginx-module-vts/archive/v${NGXMOD_VTS_VERSION}.tar.gz | tar zxC .
 
 # get path for nginx 1.25.1 from Cloudflare (Dynamic TLS records patch CloudFlare support)
 RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_dyn_size/master/nginx__dynamic_tls_records_1.25.1%2B.patch -o dynamic_tls_records_1.25.2.patch
@@ -110,9 +110,11 @@ RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_mod
 	--with-stream_realip_module \
 	--add-module=../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION} \
 	--add-module=../headers-more-nginx-module-${NGXMOD_HEADMR_VERSION} \
-	--add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
 	--with-ld-opt='-L../boringssl/.openssl/lib -Wl,-E -Wl,-Bsymbolic-functions -Wl,-z,relro -Wl,-z,now -Wl,-as-needed -pie' \
 	--with-cc-opt='-I../boringssl/include -O3 -g -pipe -Wno-error -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic'
+
+	# Disabled temporary modules
+	# --add-module=../nginx-module-vts-${NGXMOD_VTS_VERSION} \
 
 # --with-cc-opt="-g -O2 -fPIE -fstack-protector-all -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security -I $BUILDROOT/boringssl/.openssl/include/" \
 # --with-ld-opt="-Wl,-Bsymbolic-functions -Wl,-z,relro -L $BUILDROOT/boringssl/.openssl/lib/" \
