@@ -46,7 +46,7 @@ RUN apk add --no-cache build-base curl git gnupg linux-headers \
 
 WORKDIR /usr/src/nginx
 COPY --from=sslbuilder /usr/src/boringssl ./boringssl
-ADD ./cve cve
+ADD ./cve ./cve
 
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
@@ -62,7 +62,7 @@ RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 
 # apply CVE mitigation patches
-RUN patch --verbose -b -p1 < ../cve/*patch
+RUN for fl in ../cve/*patch; do patch --verbose -b -p1 < "$fl" || break; done
 
 # primary build
 RUN cp -rfv ../boringssl/.openssl/lib/* /usr/lib/
