@@ -46,6 +46,7 @@ RUN apk add --no-cache build-base curl git gnupg linux-headers \
 
 WORKDIR /usr/src/nginx
 COPY --from=sslbuilder /usr/src/boringssl ./boringssl
+ADD ./cve cve
 
 # download nginx & nginx modules
 RUN curl -f -sS -L https://nginx.org/download/nginx-${NGINX_VERSION}.tar.gz | tar zxC . \
@@ -59,9 +60,14 @@ RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_
 
 # patch nginx sources && configure
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
+
+# apply CVE mitigation patches
+RUN patch --verbose -b -p1 < ./cve/*patch
+
+# primary build
 RUN cp -rfv ../boringssl/.openssl/lib/* /usr/lib/
-RUN patch -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
-	&& patch -p1 < ../dynamic_tls_records_1.25.2.patch \
+RUN patch --verbose -b -p1 < ../graphite-nginx-module-${NGXMOD_GRAPHITE_VERSION}/graphite_module_v1_15_4.patch \
+	&& patch --verbose -b -p1 < ../dynamic_tls_records_1.25.2.patch \
 	&& ./configure --help ||: \
 	&& ../${NGINX_PCRE2_VERSION}/configure --help ||: \
 	&& ./configure \
