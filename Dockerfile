@@ -62,7 +62,7 @@ RUN curl -f -sS -L https://raw.githubusercontent.com/nginx-modules/ngx_http_tls_
 WORKDIR /usr/src/nginx/nginx-${NGINX_VERSION}
 
 # apply CVE mitigation patches
-RUN patch --verbose -b -p1 < ./cve/*patch
+RUN patch --verbose -b -p1 < ../cve/*patch
 
 # primary build
 RUN cp -rfv ../boringssl/.openssl/lib/* /usr/lib/
